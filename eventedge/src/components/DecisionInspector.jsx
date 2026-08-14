@@ -1,12 +1,13 @@
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { Coins } from "@phosphor-icons/react/Coins";
-import { Copy } from "@phosphor-icons/react/Copy";
+import { ArrowSquareOut } from "@phosphor-icons/react/ArrowSquareOut";
 import { Info } from "@phosphor-icons/react/Info";
 import { LockSimple } from "@phosphor-icons/react/LockSimple";
 import { XLogo } from "@phosphor-icons/react/XLogo";
 import { decisionPlans } from "../data/eventCase.js";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { CopyButton } from "./CopyButton.jsx";
 
 const assetLabels = {
   gold: "Au",
@@ -36,19 +37,28 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
           {["trade", "hedge", "wait"].map((value) => (
             <button
               aria-selected={decision === value}
+              aria-controls="decision-plan-panel"
               className={decision === value ? "is-selected" : ""}
+              id={`decision-tab-${value}`}
               key={value}
               onClick={() => onDecisionChange(value)}
               role="tab"
+              tabIndex={decision === value ? 0 : -1}
               type="button"
             >
               {t(`decision.${value}`)}
+              {value === "hedge" ? <small>{t("decision.recommended")}</small> : null}
             </button>
           ))}
         </div>
       </section>
 
-      <section className="rationale">
+      <section
+        aria-labelledby={`decision-tab-${decision}`}
+        className="rationale"
+        id="decision-plan-panel"
+        role="tabpanel"
+      >
         <h2>{t("decision.rationale")}</h2>
         <p>{t(`decision.rationales.${decision}`)}</p>
       </section>
@@ -90,12 +100,18 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
         </header>
         <div className="receipt-status"><i /> {t(`receipt.statuses.${receipt.status}`)}</div>
         <dl>
-          <div><dt>{t("receipt.eventHash")}</dt><dd title={receipt.eventHash}>{compactHash(receipt.eventHash)} <Copy size={14} /></dd></div>
-          <div><dt>{t("receipt.planHash")}</dt><dd title={receipt.planHash}>{compactHash(receipt.planHash)} <Copy size={14} /></dd></div>
+          <div><dt>{t("receipt.eventHash")}</dt><dd title={receipt.eventHash}>{compactHash(receipt.eventHash)} <CopyButton value={receipt.eventHash} /></dd></div>
+          <div><dt>{t("receipt.planHash")}</dt><dd title={receipt.planHash}>{compactHash(receipt.planHash)} <CopyButton value={receipt.planHash} /></dd></div>
           <div><dt>{t("receipt.network")}</dt><dd><XLogo size={14} /> {t("receipt.networkValue")}</dd></div>
           <div><dt>{t("receipt.feeSponsor")}</dt><dd>{t("receipt.sponsorValue")}</dd></div>
-          {receipt.txHash ? <div><dt>{t("receipt.txHash")}</dt><dd title={receipt.txHash}>{compactHash(receipt.txHash)} <Copy size={14} /></dd></div> : null}
+          {receipt.receiptId ? <div><dt>{t("receipt.receiptId")}</dt><dd title={receipt.receiptId}>{compactHash(receipt.receiptId)} <CopyButton value={receipt.receiptId} /></dd></div> : null}
+          {receipt.txHash ? <div><dt>{t("receipt.txHash")}</dt><dd title={receipt.txHash}>{compactHash(receipt.txHash)} <CopyButton value={receipt.txHash} /></dd></div> : null}
         </dl>
+        {receipt.explorerUrl ? (
+          <a className="explorer-link" href={receipt.explorerUrl} target="_blank" rel="noreferrer">
+            {t("receipt.viewExplorer")} <ArrowSquareOut size={14} />
+          </a>
+        ) : null}
       </section>
       <Coins className="inspector-watermark" size={110} weight="thin" aria-hidden="true" />
     </aside>

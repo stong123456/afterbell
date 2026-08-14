@@ -11,7 +11,7 @@ import {
   recordDecisionOnXLayer,
 } from "./lib/xlayerTestnet.js";
 
-const REPLAY_INTERVAL_MS = 360;
+const REPLAY_INTERVAL_MS = 480;
 
 export function App() {
   const [decision, setDecision] = useState("hedge");
@@ -21,6 +21,7 @@ export function App() {
   const [showProbabilities, setShowProbabilities] = useState(true);
   const [visibleSources, setVisibleSources] = useState(eventCase.sources.length);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState(1);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [receipt, setReceipt] = useState(eventCase.receipt);
   const [receiptFocus, setReceiptFocus] = useState(false);
@@ -35,10 +36,10 @@ export function App() {
 
     const timer = window.setTimeout(() => {
       setVisibleSources((current) => current + 1);
-    }, REPLAY_INTERVAL_MS);
+    }, REPLAY_INTERVAL_MS / replaySpeed);
 
     return () => window.clearTimeout(timer);
-  }, [isReplaying, visibleSources]);
+  }, [isReplaying, replaySpeed, visibleSources]);
 
   useEffect(() => {
     const ethereum = window.ethereum;
@@ -113,6 +114,7 @@ export function App() {
     <main className="app-shell">
       <AppRail
         connected={Boolean(walletAddress)}
+        connecting={walletPhase === "connecting"}
         walletAddress={walletAddress}
         onConnect={connectWallet}
         onRadar={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -123,12 +125,15 @@ export function App() {
         sources={eventCase.sources}
         visibleCount={visibleSources}
         replaying={isReplaying}
+        totalCount={eventCase.sources.length}
       />
       <ReasoningWorkspace
         event={eventCase}
         replaying={isReplaying}
+        replaySpeed={replaySpeed}
         showProbabilities={showProbabilities}
         onReplay={startReplay}
+        onReplaySpeedChange={() => setReplaySpeed((current) => (current === 1 ? 2 : current === 2 ? 0.5 : 1))}
         onToggleProbabilities={() => setShowProbabilities((current) => !current)}
       />
       <DecisionInspector

@@ -8,6 +8,8 @@
 - Deterministic CPI replay with timestamped evidence arrival.
 - Decomposed confidence score and expandable reasoning evidence.
 - Interactive Trade, Hedge, and Wait plans.
+- Chinese-first onboarding with a persistent English/Chinese switch.
+- Transparent verified-demo labeling, functional replay speed/filter controls, and copyable receipt evidence.
 - Wallet review with live EIP-1193 approval and X Layer Testnet submission.
 - X Layer receipt state with event, plan, and execution hashes.
 - Audited non-custodial `EventDecisionRegistry`, reproducible compiler artifact, and X Layer testnet deployment.

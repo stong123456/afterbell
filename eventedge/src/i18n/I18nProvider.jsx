@@ -1,19 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { getInitialLocale, persistLocale } from "./locale.js";
 import { messages } from "./translations.js";
 
-const STORAGE_KEY = "askstone.locale.v1";
-const LEGACY_STORAGE_KEY = "eventedge.locale.v1";
 const I18nContext = createContext(null);
-
-function getInitialLocale() {
-  try {
-    const savedLocale = window.localStorage.getItem(STORAGE_KEY)
-      ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    return savedLocale === "zh" || savedLocale === "en" ? savedLocale : "en";
-  } catch {
-    return "en";
-  }
-}
 
 function getMessage(locale, key) {
   return key.split(".").reduce((value, part) => value?.[part], messages[locale]);
@@ -30,22 +19,22 @@ export function I18nProvider({ children }) {
   useEffect(() => {
     document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
     document.title = messages[locale].meta.title;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, locale);
-    } catch {
-      // The interface still works when storage is unavailable.
-    }
+    persistLocale(locale);
   }, [locale]);
 
-  const t = (key, params = {}) => {
+  const t = useCallback((key, params = {}) => {
     const message = getMessage(locale, key) ?? getMessage("en", key) ?? key;
     return interpolate(message, params);
-  };
+  }, [locale]);
 
-  const toggleLocale = () => setLocale((current) => (current === "en" ? "zh" : "en"));
+  const toggleLocale = useCallback(() => {
+    setLocale((current) => (current === "en" ? "zh" : "en"));
+  }, []);
+
+  const value = useMemo(() => ({ locale, t, toggleLocale }), [locale, t, toggleLocale]);
 
   return (
-    <I18nContext.Provider value={{ locale, t, toggleLocale }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );

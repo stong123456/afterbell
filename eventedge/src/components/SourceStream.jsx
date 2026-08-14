@@ -12,7 +12,7 @@ const stateIcons = {
   neutral: MinusCircle,
 };
 
-export function SourceStream({ sources, visibleCount, replaying }) {
+export function SourceStream({ sources, totalCount, visibleCount, replaying }) {
   const [signalsOnly, setSignalsOnly] = useState(false);
   const { t, toggleLocale } = useI18n();
   const visibleSources = sources
@@ -33,14 +33,20 @@ export function SourceStream({ sources, visibleCount, replaying }) {
           >
             {t("language.shortTarget")}
           </button>
-          <button type="button" aria-label={t("sourceStream.toggleSignals")} onClick={() => setSignalsOnly((current) => !current)}>
+          <button aria-pressed={signalsOnly} type="button" aria-label={t("sourceStream.toggleSignals")} onClick={() => setSignalsOnly((current) => !current)}>
             <Funnel size={17} weight={signalsOnly ? "fill" : "regular"} />
           </button>
           <SlidersHorizontal size={17} aria-hidden="true" />
         </div>
       </div>
 
-      <button className="live-filter" type="button" onClick={() => setSignalsOnly((current) => !current)}>
+      <button
+        aria-pressed={signalsOnly}
+        className="live-filter"
+        title={t("sourceStream.demoDisclosure")}
+        type="button"
+        onClick={() => setSignalsOnly((current) => !current)}
+      >
         <span><i /> {signalsOnly ? t("sourceStream.signalsOnly") : t("sourceStream.liveAuto")}</span>
         <span className="filter-caret">⌄</span>
       </button>
@@ -75,9 +81,11 @@ export function SourceStream({ sources, visibleCount, replaying }) {
         })}
       </div>
 
-      <button className="stream-more" type="button">
-        {t("sourceStream.viewFull")} ↗
-      </button>
+      <div className="stream-summary" aria-live="polite">
+        <CheckCircle size={15} weight="fill" />
+        <span>{t("sourceStream.loaded", { visible: visibleSources.length, total: totalCount })}</span>
+        <small>{t("sourceStream.testnetEvidence")}</small>
+      </div>
     </section>
   );
 }

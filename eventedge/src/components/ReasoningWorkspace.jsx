@@ -3,7 +3,6 @@ import { Bank } from "@phosphor-icons/react/Bank";
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
 import { Clock } from "@phosphor-icons/react/Clock";
-import { Copy } from "@phosphor-icons/react/Copy";
 import { FileText } from "@phosphor-icons/react/FileText";
 import { GlobeHemisphereWest } from "@phosphor-icons/react/GlobeHemisphereWest";
 import { Info } from "@phosphor-icons/react/Info";
@@ -13,6 +12,7 @@ import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { useState } from "react";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 import { ConfidencePanel } from "./ConfidencePanel.jsx";
+import { CopyButton } from "./CopyButton.jsx";
 
 const evidenceIcons = [Bank, GlobeHemisphereWest, GlobeHemisphereWest, FileText];
 
@@ -48,13 +48,14 @@ function ReasoningNode({ node }) {
       ) : null}
       <div className="data-hash">
         <span>{t("reasoning.dataHash")}<strong>{node.hash}</strong></span>
-        <Copy size={15} />
+        <CopyButton value={node.hash} />
       </div>
     </article>
   );
 }
 
 function ImpactNode({ impact, showProbabilities }) {
+  const [expanded, setExpanded] = useState(false);
   const { t } = useI18n();
 
   return (
@@ -67,12 +68,15 @@ function ImpactNode({ impact, showProbabilities }) {
       </div>
       <span>↑ {t("reasoning.supportive")}</span>
       <p>{t("reasoning.netInflow")}<br />{impact.flow}</p>
-      <button type="button">{t("reasoning.evidence")} (1)<CaretDown size={13} /></button>
+      <button aria-expanded={expanded} type="button" onClick={() => setExpanded((current) => !current)}>
+        {t("reasoning.evidence")} (1)<CaretDown className={expanded ? "is-open" : ""} size={13} />
+      </button>
+      {expanded ? <small className="impact-evidence">{t("reasoning.flowEvidence", { flow: impact.flow, symbol: impact.symbol })}</small> : null}
     </article>
   );
 }
 
-export function ReasoningWorkspace({ event, replaying, showProbabilities, onReplay, onToggleProbabilities }) {
+export function ReasoningWorkspace({ event, replaying, replaySpeed, showProbabilities, onReplay, onReplaySpeedChange, onToggleProbabilities }) {
   const [interpretationOpen, setInterpretationOpen] = useState(false);
   const { t } = useI18n();
 
@@ -81,6 +85,7 @@ export function ReasoningWorkspace({ event, replaying, showProbabilities, onRepl
       <header className="event-header">
         <div className="event-copy">
           <h1>{t("event.title")}</h1>
+          <div className="demo-badge"><Pulse size={14} /> {t("event.demoBadge")}</div>
           <time>{t("event.timestamp")}</time>
           <p>{t("event.summary")}</p>
           <button type="button" onClick={() => setInterpretationOpen((current) => !current)}>
@@ -98,7 +103,14 @@ export function ReasoningWorkspace({ event, replaying, showProbabilities, onRepl
             {replaying ? <Clock size={16} /> : <Play size={16} weight="fill" />}
             {replaying ? t("event.replaying") : t("event.replay")}
           </button>
-          <button type="button">1x <CaretDown size={13} /></button>
+          <button
+            aria-label={t("event.replaySpeed", { speed: replaySpeed })}
+            title={t("event.replaySpeedHint")}
+            type="button"
+            onClick={onReplaySpeedChange}
+          >
+            {replaySpeed}x <CaretDown size={13} />
+          </button>
         </div>
         <ConfidencePanel confidence={event.confidence} />
       </header>

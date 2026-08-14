@@ -7,7 +7,7 @@ import { Wallet } from "@phosphor-icons/react/Wallet";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 import { compactAddress } from "../lib/xlayerTestnet.js";
 
-export function AppRail({ connected, walletAddress, onConnect, onRadar, onReceipts, onReplay }) {
+export function AppRail({ connected, connecting, walletAddress, onConnect, onRadar, onReceipts, onReplay }) {
   const { t } = useI18n();
 
   return (
@@ -38,9 +38,16 @@ export function AppRail({ connected, walletAddress, onConnect, onRadar, onReceip
           <span>{t("network.testnet")}</span>
           <small><i /> {t("network.online")}</small>
         </div>
-        <button className={`wallet-button ${connected ? "is-connected" : ""}`} type="button" onClick={onConnect}>
+        <button
+          aria-busy={connecting}
+          aria-label={connected ? t("wallet.connectedLabel", { address: compactAddress(walletAddress) }) : t("wallet.connect")}
+          className={`wallet-button ${connected ? "is-connected" : ""}`}
+          disabled={connecting}
+          type="button"
+          onClick={onConnect}
+        >
           <Wallet size={19} />
-          <span>{connected ? compactAddress(walletAddress) : t("wallet.connect")}</span>
+          <span>{connected ? compactAddress(walletAddress) : connecting ? t("wallet.connecting") : t("wallet.connect")}</span>
         </button>
         <div className="theme-icons" aria-hidden="true">
           <Sun size={20} />
