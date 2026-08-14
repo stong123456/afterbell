@@ -1,0 +1,28 @@
+{
+  "project": "askstone",
+  "contract": "EventDecisionRegistry",
+  "network": "X Layer Testnet",
+  "chainId": 1952,
+  "address": "0x8EB68D8fc210e4dA44bb5f6248D102ff44Aa7647",
+  "deployer": "0xdbf3151ccdbcd23432f7906b5d6111e66755026d",
+  "deploymentFactory": "0xce0042B868300000d44A59004Da54A005ffdcf9f",
+  "deploymentSaltLabel": "askstone.EventDecisionRegistry.v1",
+  "transactionHash": "0xfbe8a6d270100ac9bea975c22c71a856d7bf8b5047661d98912239dc9a8bde2a",
+  "walletOrderId": "1870572644550845168",
+  "status": "SUCCESS",
+  "deployedAt": "2026-08-14T07:16:25.000Z",
+  "compiler": "0.8.30+commit.73712a01.Emscripten.clang",
+  "evmVersion": "shanghai",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "sourceSha256": "3ac6740ed9648983910f507557b00f14074732d54693c3ea60fa3cae1506d584",
+  "initCodeHash": "0x4e87f704ca1391f68c7b24d35318a185c7eaadbe4f9edd26dfa1ee5c27485e30",
+  "creationBytecodeSha256": "00cbc464932c16e01cbebc05a5c72d0ac4ed74dec756a86c90eefc74a31e9570",
+  "runtimeBytecodeSha256": "acb192ee5c33734eca485834b02fd4f0c96dda70efc97272f63d91c57452adc8",
+  "explorer": {
+    "contract": "https://www.okx.com/web3/explorer/xlayer-test/address/0x8EB68D8fc210e4dA44bb5f6248D102ff44Aa7647",
+    "transaction": "https://www.okx.com/web3/explorer/xlayer-test/tx/0xfbe8a6d270100ac9bea975c22c71a856d7bf8b5047661d98912239dc9a8bde2a"
+  }
+}
