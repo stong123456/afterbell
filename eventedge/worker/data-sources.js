@@ -191,7 +191,7 @@ export async function fetchOkxNews(env, fetcher = fetch) {
       id: String(article.id),
       title: String(article.title ?? ""),
       summary: String(article.summary ?? ""),
-      source: String(article.platform ?? article.source ?? "OKX News"),
+      source: String(article.platform || article.source || "OKX News"),
       sourceUrl: String(article.sourceUrl ?? ""),
       timestamp: number(article.timestamp) ?? Date.now(),
       importance: String(article.importance ?? "medium"),

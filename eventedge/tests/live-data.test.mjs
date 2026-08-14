@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { maybeEnhanceWithAi } from "../worker/ai.js";
-import { fetchBlsCpi, fetchOkxMarkets, fetchXLayerStatus } from "../worker/data-sources.js";
+import { fetchBlsCpi, fetchOkxMarkets, fetchOkxNews, fetchXLayerStatus } from "../worker/data-sources.js";
 import { buildSnapshot } from "../worker/engine.js";
 import { cachedSource } from "../worker/storage.js";
 
@@ -48,6 +48,20 @@ test("normalizes credential-free OKX public market data", async () => {
   assert.equal(market.items.length, 3);
   assert.equal(market.items[0].instId, "BTC-USDT");
   assert.equal(Number(market.items[0].change24hPct.toFixed(2)), 3.33);
+});
+
+test("uses a stable source label when an OKX news item omits its platform", async () => {
+  const newsFetch = async () => ok({
+    data: {
+      articles: [{ id: "1", title: "Headline", summary: "Summary", platform: "", source: "" }],
+    },
+  });
+  const news = await fetchOkxNews({
+    OKX_API_KEY: "test-key",
+    OKX_API_SECRET: "test-secret",
+    OKX_API_PASSPHRASE: "test-passphrase",
+  }, newsFetch);
+  assert.equal(news.articles[0].source, "OKX News");
 });
 
 test("normalizes an official BLS CPI series without inventing consensus", async () => {
