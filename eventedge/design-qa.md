@@ -71,3 +71,28 @@ Focused inspection was required because the confidence breakdown, node evidence 
 ## Final result
 
 final result: passed
+
+## Live layout correction — 2026-08-14
+
+### Audit evidence
+
+- Reported production viewport: 1873 x 889.
+- Browser verification viewports: 1873 x 889, 1280 x 720, and 390 x 844.
+- Before correction at 1280px, the causal chain required 723px inside a 586px workspace, the map scrolled to 740px, and the 760px minimum app height exceeded the 720px viewport.
+
+### Corrected surfaces
+
+- Capped the wide workbench at 1640px so causal nodes and impact branches stay connected instead of drifting to opposite edges.
+- Rebalanced desktop columns to 88 / 264 / flexible / 360 pixels.
+- Moved the decision inspector below the evidence workspace under 1440px rather than compressing four panels into an unreadable laptop layout.
+- Reduced the mobile navigation to 64px with 42 x 48px controls and verified zero horizontal document overflow at 390px.
+- Clamped live-news headlines and details, truncated long evidence labels, and ellipsized data hashes within their cards.
+- Synced the selected decision with the latest recommendation until the user explicitly chooses another plan.
+
+### Verification
+
+- The 1873px implementation was compared side by side with `design/eventedge-workbench-spec.png`.
+- The evidence-to-reasoning-to-decision reading path, black/acid-lime palette, causal node proportions, confidence panel, and fixed inspector hierarchy remain faithful to the selected concept.
+- Trade selection and Live/Replay switching were exercised after the layout change; no browser console warnings or errors were present.
+
+final result: passed

@@ -37,6 +37,7 @@ export function App() {
   const [livePhase, setLivePhase] = useState("loading");
   const [liveError, setLiveError] = useState("");
   const currentEventIdRef = useRef(eventCase.event.id);
+  const decisionTouchedRef = useRef(false);
 
   const activePlans = activeCase.plans ?? decisionPlans;
   const selectedPlan = activePlans[decision] ?? decisionPlans[decision];
@@ -48,7 +49,7 @@ export function App() {
     setVisibleSources(snapshot.sources.length);
     setLivePhase("connected");
     setLiveError("");
-    if (eventChanged) setDecision(snapshot.recommendedDecision);
+    if (eventChanged || !decisionTouchedRef.current) setDecision(snapshot.recommendedDecision);
     setReceipt((current) => (
       current.status === "recorded" && current.eventId === snapshot.event.id
         ? current
@@ -140,6 +141,7 @@ export function App() {
   }, [loadReceiptHistory]);
 
   const startReplay = () => {
+    decisionTouchedRef.current = false;
     setMode("replay");
     setActiveCase(eventCase);
     currentEventIdRef.current = eventCase.event.id;
@@ -155,6 +157,7 @@ export function App() {
       startReplay();
       return;
     }
+    decisionTouchedRef.current = false;
     setMode("live");
     setIsReplaying(false);
   };
@@ -174,6 +177,11 @@ export function App() {
     setReceiptFocus(true);
     window.setTimeout(() => setReceiptFocus(false), 1400);
     void loadReceiptHistory(walletAddress);
+  };
+
+  const selectDecision = (nextDecision) => {
+    decisionTouchedRef.current = true;
+    setDecision(nextDecision);
   };
 
   const connectWallet = async () => {
@@ -281,7 +289,7 @@ export function App() {
         receiptFocus={receiptFocus}
         receiptHistory={receiptHistory}
         recommendedDecision={activeCase.recommendedDecision ?? "hedge"}
-        onDecisionChange={setDecision}
+        onDecisionChange={selectDecision}
         onReview={() => {
           setWalletError("");
           setReviewOpen(true);
