@@ -137,3 +137,12 @@ test("a forced refresh bypasses an otherwise fresh source cache", async () => {
   assert.equal(cached.generation, 1);
   assert.equal(forced.generation, 2);
 });
+
+test("keeps the last successful source explicitly marked stale when an upstream fails", async () => {
+  const key = `stale-fallback-${Date.now()}`;
+  await cachedSource({}, key, 1_000, async () => ({ value: "verified" }), 1_000);
+  const fallback = await cachedSource({}, key, 1_000, async () => {
+    throw new Error("rate_limited");
+  }, 3_000);
+  assert.deepEqual(fallback, { value: "verified", _cacheStale: true });
+});

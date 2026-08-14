@@ -5,21 +5,38 @@ function hasDatabase(env) {
 }
 
 export async function cachedSource(env, key, ttlMs, loader, now = Date.now(), force = false) {
-  if (!force && hasDatabase(env)) {
+  let staleValue;
+  if (hasDatabase(env)) {
     try {
       const row = await env.DB.prepare(
         "SELECT payload_json, expires_at FROM source_cache WHERE cache_key = ?",
       ).bind(key).first();
-      if (row && Number(row.expires_at) > now) return JSON.parse(row.payload_json);
+      if (row) {
+        staleValue = JSON.parse(row.payload_json);
+        if (!force && Number(row.expires_at) > now) return staleValue;
+      }
     } catch {
       // A fresh deployment may briefly serve before migrations settle. Fall back to memory.
     }
-  } else if (!force) {
-    const cached = memoryCache.get(key);
-    if (cached && cached.expiresAt > now) return cached.value;
   }
 
-  const value = await loader();
+  if (staleValue === undefined) {
+    const cached = memoryCache.get(key);
+    if (cached) {
+      staleValue = cached.value;
+      if (!force && cached.expiresAt > now) return staleValue;
+    }
+  }
+
+  let value;
+  try {
+    value = await loader();
+  } catch (error) {
+    if (staleValue && typeof staleValue === "object") {
+      return { ...staleValue, _cacheStale: true };
+    }
+    throw error;
+  }
   const expiresAt = now + ttlMs;
   memoryCache.set(key, { value, expiresAt });
 

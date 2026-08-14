@@ -41,7 +41,14 @@ function secure(response) {
 }
 
 function settledValue(result, errorCode, errors) {
-  if (result.status === "fulfilled") return result.value;
+  if (result.status === "fulfilled") {
+    if (result.value?._cacheStale) {
+      errors.push(errorCode.replace(/_unavailable$/, "_stale"));
+      const { _cacheStale, ...value } = result.value;
+      return value;
+    }
+    return result.value;
+  }
   errors.push(errorCode);
   return null;
 }
