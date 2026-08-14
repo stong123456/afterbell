@@ -32,3 +32,13 @@ requests approvals, calls routers, verifies prices, or executes trades.
 - Production trade adapters, if added, must be separate contracts with independent audits, slippage limits,
   token/router allowlists, pause controls, and simulation.
 - Mainnet deployment requires an independent third-party audit and explorer source verification.
+
+## Live service controls
+
+- OKX and OpenAI credentials remain server-side Worker environment variables and are never serialized into `/api/config`.
+- Cross-origin write requests are rejected, request bodies are bounded, and receipt fields are format-validated.
+- A receipt is indexed only after X Layer RPC confirms success, matching sender, and the deployed registry address.
+- Upstream calls have abort timeouts; cached snapshots provide bounded resilience without hiding their timestamps.
+- AI output is strict-schema, source text is treated as untrusted input, and the model cannot change confidence math,
+  position caps, expiry, invalidation rules, wallet destination, or contract calls.
+- If all live sources fail before a valid snapshot exists, the UI switches to an explicitly labeled replay.

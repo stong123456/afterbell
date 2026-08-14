@@ -1,4 +1,5 @@
 import { ArrowRight } from "@phosphor-icons/react/ArrowRight";
+import { ArrowsClockwise } from "@phosphor-icons/react/ArrowsClockwise";
 import { Bank } from "@phosphor-icons/react/Bank";
 import { CaretDown } from "@phosphor-icons/react/CaretDown";
 import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
@@ -11,36 +12,52 @@ import { Pulse } from "@phosphor-icons/react/Pulse";
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle";
 import { useState } from "react";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { localized } from "../lib/liveData.js";
 import { ConfidencePanel } from "./ConfidencePanel.jsx";
 import { CopyButton } from "./CopyButton.jsx";
 
 const evidenceIcons = [Bank, GlobeHemisphereWest, GlobeHemisphereWest, FileText];
 
-function ReasoningNode({ node }) {
+function ReasoningNode({ node, sourceMap }) {
   const [expanded, setExpanded] = useState(true);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const title = localized(node.title, locale, t("reasoning.nodes." + node.id + ".title"));
+  const subtitle = localized(node.subtitle, locale, t("reasoning.nodes." + node.id + ".subtitle"));
+  const value = localized(node.value, locale, t("reasoning.nodes." + node.id + ".value"));
+  const delta = localized(node.delta, locale, t("reasoning.nodes." + node.id + ".delta"));
 
   return (
     <article className="reasoning-node">
       <CheckCircle className="node-check" size={21} weight="fill" />
       <div className="node-core">
-        <strong>{t(`reasoning.nodes.${node.id}.title`)}</strong>
-        <span>{t(`reasoning.nodes.${node.id}.subtitle`)}</span>
-        <b>{t(`reasoning.nodes.${node.id}.value`)}</b>
-        <small>{t(`reasoning.nodes.${node.id}.delta`)}</small>
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+        <b>{value}</b>
+        <small>{delta}</small>
       </div>
-      <button className="evidence-toggle" type="button" onClick={() => setExpanded((current) => !current)}>
+      <button
+        aria-expanded={expanded}
+        className="evidence-toggle"
+        type="button"
+        onClick={() => setExpanded((current) => !current)}
+      >
         <span>{t("reasoning.evidence")} ({node.evidence.length})</span>
         <CaretDown className={expanded ? "is-open" : ""} size={14} />
       </button>
       {expanded ? (
         <div className="node-evidence">
-          {node.evidence.map((source, index) => {
+          {node.evidence.map((sourceId, index) => {
             const EvidenceIcon = evidenceIcons[index % evidenceIcons.length];
+            const source = sourceMap.get(sourceId);
+            const label = localized(
+              source?.name,
+              locale,
+              t("reasoning.evidenceItems." + sourceId),
+            );
             return (
-              <div key={source}>
+              <div key={sourceId}>
                 <EvidenceIcon size={18} />
-                <span>{t(`reasoning.evidenceItems.${source}`)}<small>08:30:{String(index * 4).padStart(2, "0")}</small></span>
+                <span>{label}<small>{source?.time ?? "—"}</small></span>
               </div>
             );
           })}
@@ -56,61 +73,108 @@ function ReasoningNode({ node }) {
 
 function ImpactNode({ impact, showProbabilities }) {
   const [expanded, setExpanded] = useState(false);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const title = localized(impact.name, locale, t("reasoning.impacts." + impact.id));
 
   return (
     <article className="impact-node">
       <CheckCircle className="impact-check" size={18} weight="fill" />
-      {showProbabilities ? <div className="impact-score"><strong>{impact.score}</strong><span>{t("reasoning.moderate")}</span></div> : null}
+      {showProbabilities ? (
+        <div className="impact-score">
+          <strong>{impact.score}</strong>
+          <span>{t("reasoning.moderate")}</span>
+        </div>
+      ) : null}
       <div>
-        <strong>{t(`reasoning.impacts.${impact.id}`)}</strong>
+        <strong>{title}</strong>
         <small>({impact.symbol})</small>
       </div>
       <span>↑ {t("reasoning.supportive")}</span>
-      <p>{t("reasoning.netInflow")}<br />{impact.flow}</p>
+      <p>{t("reasoning.marketMove")}<br />{impact.flow}</p>
       <button aria-expanded={expanded} type="button" onClick={() => setExpanded((current) => !current)}>
         {t("reasoning.evidence")} (1)<CaretDown className={expanded ? "is-open" : ""} size={13} />
       </button>
-      {expanded ? <small className="impact-evidence">{t("reasoning.flowEvidence", { flow: impact.flow, symbol: impact.symbol })}</small> : null}
+      {expanded ? (
+        <small className="impact-evidence">
+          {impact.evidence ?? t("reasoning.flowEvidence", { flow: impact.flow, symbol: impact.symbol })}
+        </small>
+      ) : null}
     </article>
   );
 }
 
-export function ReasoningWorkspace({ event, replaying, replaySpeed, showProbabilities, onReplay, onReplaySpeedChange, onToggleProbabilities }) {
+export function ReasoningWorkspace({
+  event,
+  livePhase,
+  mode,
+  onRefresh,
+  onReplay,
+  onReplaySpeedChange,
+  onToggleProbabilities,
+  replaying,
+  replaySpeed,
+  showProbabilities,
+}) {
   const [interpretationOpen, setInterpretationOpen] = useState(false);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const sourceMap = new Map(event.sources.map((source) => [source.id, source]));
+  const title = localized(event.event?.title, locale, t("event.title"));
+  const timestamp = localized(event.event?.timestamp, locale, t("event.timestamp"));
+  const summary = localized(event.event?.summary, locale, t("event.summary"));
+  const interpretation = localized(event.event?.interpretation, locale, t("event.interpretation"));
+  const aiActive = event.engine?.aiStatus === "active";
+  const generatedAt = event.engine?.generatedAt
+    ? new Date(event.engine.generatedAt).toLocaleString(locale === "zh" ? "zh-CN" : "en-US")
+    : t("reasoning.replayTimestamp");
 
   return (
     <section className="reasoning-workspace">
       <header className="event-header">
         <div className="event-copy">
-          <h1>{t("event.title")}</h1>
-          <div className="demo-badge"><Pulse size={14} /> {t("event.demoBadge")}</div>
-          <time>{t("event.timestamp")}</time>
-          <p>{t("event.summary")}</p>
+          <h1>{title}</h1>
+          <div className={"demo-badge " + (mode === "live" ? "is-live" : "")}>
+            <Pulse size={14} />
+            {mode === "live"
+              ? aiActive
+                ? t("event.liveAiBadge")
+                : t("event.liveRulesBadge")
+              : t("event.demoBadge")}
+          </div>
+          <time>{timestamp}</time>
+          <p>{summary}</p>
           <button type="button" onClick={() => setInterpretationOpen((current) => !current)}>
             {interpretationOpen ? t("event.hideInterpretation") : t("event.viewInterpretation")}
             <CaretDown className={interpretationOpen ? "is-open" : ""} size={15} />
           </button>
-          {interpretationOpen ? (
-            <div className="interpretation-note">
-              {t("event.interpretation")}
-            </div>
-          ) : null}
+          {interpretationOpen ? <div className="interpretation-note">{interpretation}</div> : null}
         </div>
         <div className="event-tools">
-          <button className={replaying ? "is-active" : ""} type="button" onClick={onReplay}>
-            {replaying ? <Clock size={16} /> : <Play size={16} weight="fill" />}
-            {replaying ? t("event.replaying") : t("event.replay")}
-          </button>
-          <button
-            aria-label={t("event.replaySpeed", { speed: replaySpeed })}
-            title={t("event.replaySpeedHint")}
-            type="button"
-            onClick={onReplaySpeedChange}
-          >
-            {replaySpeed}x <CaretDown size={13} />
-          </button>
+          {mode === "live" ? (
+            <button
+              className={livePhase === "refreshing" ? "is-active" : ""}
+              disabled={livePhase === "refreshing"}
+              type="button"
+              onClick={onRefresh}
+            >
+              <ArrowsClockwise size={16} />
+              {livePhase === "refreshing" ? t("event.refreshing") : t("event.refreshLive")}
+            </button>
+          ) : (
+            <>
+              <button className={replaying ? "is-active" : ""} type="button" onClick={onReplay}>
+                {replaying ? <Clock size={16} /> : <Play size={16} weight="fill" />}
+                {replaying ? t("event.replaying") : t("event.replay")}
+              </button>
+              <button
+                aria-label={t("event.replaySpeed", { speed: replaySpeed })}
+                title={t("event.replaySpeedHint")}
+                type="button"
+                onClick={onReplaySpeedChange}
+              >
+                {replaySpeed}x <CaretDown size={13} />
+              </button>
+            </>
+          )}
         </div>
         <ConfidencePanel confidence={event.confidence} />
       </header>
@@ -129,7 +193,7 @@ export function ReasoningWorkspace({ event, replaying, replaySpeed, showProbabil
           <div className="reasoning-chain">
             {event.reasoning.map((node, index) => (
               <div className="reasoning-step" key={node.id}>
-                <ReasoningNode node={node} />
+                <ReasoningNode node={node} sourceMap={sourceMap} />
                 {index < event.reasoning.length - 1 ? (
                   <div className="reasoning-arrow" aria-hidden="true">
                     <span>{showProbabilities ? node.strength : ""}</span>
@@ -141,9 +205,7 @@ export function ReasoningWorkspace({ event, replaying, replaySpeed, showProbabil
           </div>
 
           <div className="impact-branch" aria-label={t("reasoning.impactedAssets")}>
-            <div className="branch-lines" aria-hidden="true">
-              <i /><i /><i />
-            </div>
+            <div className="branch-lines" aria-hidden="true"><i /><i /><i /></div>
             {event.impacts.map((impact) => (
               <ImpactNode impact={impact} key={impact.symbol} showProbabilities={showProbabilities} />
             ))}
@@ -157,8 +219,8 @@ export function ReasoningWorkspace({ event, replaying, replaySpeed, showProbabil
             <span><Pulse size={18} /> {t("reasoning.mixedNeutral")}</span>
           </div>
           <div>
-            <span>{t("reasoning.model")} <Info size={15} /></span>
-            <span>{t("reasoning.lastUpdated")} <i /></span>
+            <span>{aiActive ? t("reasoning.aiModel", { model: event.engine.model }) : t("reasoning.rulesModel")} <Info size={15} /></span>
+            <span>{t("reasoning.lastUpdatedDynamic", { time: generatedAt })} <i /></span>
           </div>
         </footer>
       </section>

@@ -42,9 +42,9 @@ test("falls back to index.html for an unknown app route", async () => {
 });
 
 test("does not turn missing API or write requests into the app shell", async () => {
-  for (const request of [
-    new Request("https://example.test/api/missing", { headers: { accept: "application/json" } }),
-    new Request("https://example.test/flow", { method: "POST", headers: { accept: "text/html" } }),
+  for (const [request, expectedCalls] of [
+    [new Request("https://example.test/api/missing", { headers: { accept: "application/json" } }), 0],
+    [new Request("https://example.test/flow", { method: "POST", headers: { accept: "text/html" } }), 1],
   ]) {
     let calls = 0;
     const response = await worker.fetch(request, {
@@ -57,12 +57,39 @@ test("does not turn missing API or write requests into the app shell", async () 
     });
 
     assert.equal(response.status, 404);
-    assert.equal(calls, 1);
+    assert.equal(calls, expectedCalls);
   }
+});
+
+test("exposes only non-secret live capability configuration", async () => {
+  const response = await worker.fetch(new Request("https://example.test/api/config"), {
+    ASSETS: { fetch: async () => new Response("missing", { status: 404 }) },
+    OKX_API_KEY: "configured",
+    OKX_API_SECRET: "never-return-this",
+    OKX_API_PASSPHRASE: "never-return-this-either",
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(payload.data.okxPublicMarket, true);
+  assert.equal(payload.data.okxSocialNews, true);
+  assert.equal(JSON.stringify(payload).includes("never-return"), false);
+});
+
+test("rejects malformed receipt syncs before any chain lookup", async () => {
+  const response = await worker.fetch(new Request("https://example.test/api/receipts", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://example.test" },
+    body: JSON.stringify({ owner: "not-an-address" }),
+  }), {
+    ASSETS: { fetch: async () => new Response("missing", { status: 404 }) },
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_receipt");
 });
 
 test("emits the files required by Sites packaging", async () => {
   await access(new URL("../dist/client/index.html", import.meta.url));
   await access(new URL("../dist/server/index.js", import.meta.url));
+  await access(new URL("../dist/server/engine.js", import.meta.url));
   await access(new URL("../dist/.openai/hosting.json", import.meta.url));
 });

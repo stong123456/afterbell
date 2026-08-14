@@ -25,20 +25,34 @@ export class XLayerWalletError extends Error {
 
 function canonicalDecisionPayload(eventCase, decision, plan) {
   return {
-    schema: "askstone.decision-plan.v1",
+    schema: "askstone.decision-plan.v2",
     eventId: eventCase.event.id,
     decision,
     confidence: eventCase.confidence.score,
     allocation: plan.allocation,
+    notionalCap: plan.notionalCap ?? "$100,000",
     maxLoss: plan.maxLoss,
+    maxSlippage: plan.slippage ?? "0.18%",
+    expiresAt: plan.expiresAt ?? null,
+    invalidation: plan.invalidation ?? null,
   };
 }
 
 function canonicalEventPayload(eventCase) {
   return {
-    schema: "askstone.event.v1",
+    schema: "askstone.event.v2",
     eventId: eventCase.event.id,
-    sources: eventCase.sources.map(({ id, time, state }) => ({ id, time, state })),
+    generatedAt: eventCase.generatedAt ?? null,
+    sources: eventCase.sources.map(({
+      id,
+      time,
+      state,
+      observedAt = null,
+      name = null,
+      headline = null,
+      detail = null,
+      sourceUrl = null,
+    }) => ({ id, time, state, observedAt, name, headline, detail, sourceUrl })),
   };
 }
 

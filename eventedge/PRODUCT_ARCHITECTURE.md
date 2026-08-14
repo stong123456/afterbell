@@ -98,10 +98,12 @@ Public/event feeds       Market/probability feeds       X Layer Data API
 
 ### Agent service
 
-- Provider-agnostic orchestrator with JSON-schema validation on every stage.
-- Source adapters execute in parallel and return timestamped, normalized observations.
+- Cloudflare Worker orchestrator with a D1-backed snapshot cache and receipt index.
+- Source adapters execute in parallel and return timestamped, normalized observations from OKX public market data,
+  BLS/FRED CPI, X Layer testnet RPC, and optional signed OKX Onchain news.
 - The model may generate hypotheses and explanations; scoring arithmetic and risk limits are deterministic functions.
 - Each output includes `modelVersion`, `promptVersion`, `sourceIds`, and `generatedAt`.
+- Live snapshots are available over REST and one-shot Server-Sent Events; replay remains a labeled, network-independent fallback.
 
 ### X Layer contracts
 
@@ -162,10 +164,11 @@ type DecisionPlan = {
 
 ### Submission build
 
-- CPI replay and live-source adapter interface.
+- Live OKX/BLS-FRED/X Layer aggregation plus a labeled CPI replay fallback.
 - Decomposed evidence and causal graph.
 - Trade/Hedge/Wait plan comparison.
 - Wallet review and X Layer testnet receipt.
+- RPC-verified receipt history and D1 persistence.
 - Project X account, demo video, and official submission post.
 
 ### Post-submission mainnet path

@@ -5,10 +5,9 @@ import { ShieldCheck } from "@phosphor-icons/react/ShieldCheck";
 import { Wallet } from "@phosphor-icons/react/Wallet";
 import { X } from "@phosphor-icons/react/X";
 import { useEffect, useRef } from "react";
-import { decisionPlans } from "../data/eventCase.js";
 import { useI18n } from "../i18n/I18nProvider.jsx";
 
-export function ReviewSheet({ connected, decision, error, open, phase, onClose, onConnect, onSign }) {
+export function ReviewSheet({ connected, decision, error, open, phase, plan, onClose, onConnect, onSign }) {
   const closeButtonRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -25,8 +24,6 @@ export function ReviewSheet({ connected, decision, error, open, phase, onClose, 
   }, [open]);
 
   if (!open) return null;
-  const plan = decisionPlans[decision];
-
   return (
     <div className="sheet-backdrop" role="presentation" onMouseDown={onClose}>
       <section
@@ -46,7 +43,7 @@ export function ReviewSheet({ connected, decision, error, open, phase, onClose, 
 
         <dl className="review-summary">
           <div><dt>{t("review.action")}</dt><dd>{t(`decision.${decision}`)}</dd></div>
-          <div><dt>{t("review.notionalCap")}</dt><dd>$100,000</dd></div>
+          <div><dt>{t("review.notionalCap")}</dt><dd>{plan.notionalCap ?? "$100,000"}</dd></div>
           <div><dt>{t("review.maximumLoss")}</dt><dd>{plan.maxLoss}</dd></div>
           <div><dt>{t("review.expiry")}</dt><dd>{t("review.expiryValue")}</dd></div>
           <div><dt>{t("review.network")}</dt><dd>{t("receipt.networkValue")}</dd></div>

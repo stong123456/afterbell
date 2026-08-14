@@ -1,12 +1,12 @@
-import { CaretDown } from "@phosphor-icons/react/CaretDown";
-import { CheckCircle } from "@phosphor-icons/react/CheckCircle";
-import { Coins } from "@phosphor-icons/react/Coins";
 import { ArrowSquareOut } from "@phosphor-icons/react/ArrowSquareOut";
+import { CaretDown } from "@phosphor-icons/react/CaretDown";
+import { Coins } from "@phosphor-icons/react/Coins";
 import { Info } from "@phosphor-icons/react/Info";
 import { LockSimple } from "@phosphor-icons/react/LockSimple";
 import { XLogo } from "@phosphor-icons/react/XLogo";
 import { decisionPlans } from "../data/eventCase.js";
 import { useI18n } from "../i18n/I18nProvider.jsx";
+import { localized } from "../lib/liveData.js";
 import { CopyButton } from "./CopyButton.jsx";
 
 const assetLabels = {
@@ -17,18 +17,28 @@ const assetLabels = {
 };
 
 const compactHash = (value) => (
-  value?.length > 18 ? `${value.slice(0, 10)}…${value.slice(-6)}` : value
+  value?.length > 18 ? value.slice(0, 10) + "…" + value.slice(-6) : value
 );
 
-export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionChange, onReview }) {
-  const plan = decisionPlans[decision];
-  const { t } = useI18n();
+export function DecisionInspector({
+  decision,
+  plans,
+  receipt,
+  receiptFocus,
+  receiptHistory,
+  recommendedDecision,
+  onDecisionChange,
+  onReview,
+}) {
+  const plan = plans?.[decision] ?? decisionPlans[decision];
+  const { locale, t } = useI18n();
+  const rationale = localized(plan.rationale, locale, t("decision.rationales." + decision));
 
   return (
-    <aside className={`decision-inspector ${receiptFocus ? "receipt-focused" : ""}`}>
+    <aside className={"decision-inspector " + (receiptFocus ? "receipt-focused" : "")}>
       <header>
         <span>{t("decision.title")} <Info size={15} /></span>
-        <span>↗</span>
+        <span>→</span>
       </header>
 
       <section className="decision-block">
@@ -39,28 +49,28 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
               aria-selected={decision === value}
               aria-controls="decision-plan-panel"
               className={decision === value ? "is-selected" : ""}
-              id={`decision-tab-${value}`}
+              id={"decision-tab-" + value}
               key={value}
               onClick={() => onDecisionChange(value)}
               role="tab"
               tabIndex={decision === value ? 0 : -1}
               type="button"
             >
-              {t(`decision.${value}`)}
-              {value === "hedge" ? <small>{t("decision.recommended")}</small> : null}
+              {t("decision." + value)}
+              {value === recommendedDecision ? <small>{t("decision.recommended")}</small> : null}
             </button>
           ))}
         </div>
       </section>
 
       <section
-        aria-labelledby={`decision-tab-${decision}`}
+        aria-labelledby={"decision-tab-" + decision}
         className="rationale"
         id="decision-plan-panel"
         role="tabpanel"
       >
         <h2>{t("decision.rationale")}</h2>
-        <p>{t(`decision.rationales.${decision}`)}</p>
+        <p>{rationale}</p>
       </section>
 
       <section className="allocation">
@@ -68,21 +78,30 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
         <div className="allocation-list">
           {plan.allocation.map(([kind, percent, amount]) => (
             <div className="allocation-row" key={kind}>
-              <span className={`asset-icon is-${kind}`}>{assetLabels[kind]}</span>
-              <strong>{t(`decision.assets.${kind}`)}</strong>
+              <span className={"asset-icon is-" + kind}>{assetLabels[kind]}</span>
+              <strong>{t("decision.assets." + kind)}</strong>
               <b>{percent}</b>
               <span>{amount}</span>
             </div>
           ))}
         </div>
-        <div className="total-row"><span>{t("decision.totalNotional")}</span><strong>$100,000</strong></div>
+        <div className="total-row">
+          <span>{t("decision.totalNotional")}</span>
+          <strong>{plan.notionalCap ?? "$100,000"}</strong>
+        </div>
       </section>
 
       <dl className="risk-list">
         <div><dt>{t("decision.maxLoss")}</dt><dd>{plan.maxLoss}</dd></div>
-        <div><dt>{t("decision.estimatedSlippage")} <Info size={14} /></dt><dd>0.18%</dd></div>
-        <div><dt>{t("decision.timeInForce")}</dt><dd>{t("decision.goodFor")}</dd></div>
-        <div className="invalidation"><dt>{t("decision.invalidation")}</dt><dd>{t("decision.invalidationCopy")}</dd></div>
+        <div><dt>{t("decision.estimatedSlippage")} <Info size={14} /></dt><dd>{plan.slippage ?? "0.18%"}</dd></div>
+        <div>
+          <dt>{t("decision.timeInForce")}</dt>
+          <dd>{plan.expiresInMinutes ? t("decision.goodForMinutes", { minutes: plan.expiresInMinutes }) : t("decision.goodFor")}</dd>
+        </div>
+        <div className="invalidation">
+          <dt>{t("decision.invalidation")}</dt>
+          <dd>{localized(plan.invalidation, locale, t("decision.liveInvalidation"))}</dd>
+        </div>
       </dl>
 
       <button className="review-button" type="button" onClick={onReview}>
@@ -98,7 +117,7 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
           <span>{t("receipt.title")} <Info size={14} /></span>
           <CaretDown size={15} />
         </header>
-        <div className="receipt-status"><i /> {t(`receipt.statuses.${receipt.status}`)}</div>
+        <div className="receipt-status"><i /> {t("receipt.statuses." + receipt.status)}</div>
         <dl>
           <div><dt>{t("receipt.eventHash")}</dt><dd title={receipt.eventHash}>{compactHash(receipt.eventHash)} <CopyButton value={receipt.eventHash} /></dd></div>
           <div><dt>{t("receipt.planHash")}</dt><dd title={receipt.planHash}>{compactHash(receipt.planHash)} <CopyButton value={receipt.planHash} /></dd></div>
@@ -113,6 +132,24 @@ export function DecisionInspector({ decision, receipt, receiptFocus, onDecisionC
           </a>
         ) : null}
       </section>
+
+      {receiptHistory.length ? (
+        <section className="receipt-history">
+          <h2>{t("receipt.history")}</h2>
+          {receiptHistory.slice(0, 3).map((item) => (
+            <a
+              href={"https://www.okx.com/web3/explorer/xlayer-test/tx/" + item.txHash}
+              key={item.receiptId}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>{t("decision." + item.decision)}</span>
+              <strong>{compactHash(item.txHash)}</strong>
+              <small>{new Date(Number(item.recordedAt)).toLocaleString(locale === "zh" ? "zh-CN" : "en-US")}</small>
+            </a>
+          ))}
+        </section>
+      ) : null}
       <Coins className="inspector-watermark" size={110} weight="thin" aria-hidden="true" />
     </aside>
   );

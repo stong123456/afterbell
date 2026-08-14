@@ -11,8 +11,9 @@
     "contracts:lint": "node node_modules/solhint/solhint.js contracts/EventDecisionRegistry.sol",
     "contracts:test": "node --test --test-isolation=none tests/event-decision-registry.test.mjs",
     "preview": "vite preview",
-    "test:sites": "node --test tests/sites-worker.test.mjs",
-    "test:i18n": "node --test tests/i18n-locale.test.mjs",
+    "test:sites": "node --test --test-isolation=none tests/sites-worker.test.mjs",
+    "test:i18n": "node --test --test-isolation=none tests/i18n-locale.test.mjs",
+    "test:live": "node --test --test-isolation=none tests/live-data.test.mjs",
     "test:xlayer": "node --test --test-isolation=none tests/xlayer-testnet.test.mjs",
     "xlayer:testnet:verify": "node scripts/verify-xlayer-testnet.mjs"
   },
