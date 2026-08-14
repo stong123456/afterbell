@@ -98,6 +98,8 @@ test("builds a bounded bilingual live snapshot from timestamped evidence", async
   assert.match(snapshot.reasoning[0].hash, /^0x[0-9a-f]{64}$/);
   assert.ok(["trade", "hedge", "wait"].includes(snapshot.recommendedDecision));
   assert.equal(typeof snapshot.event.summary.zh, "string");
+  assert.match(snapshot.event.title.zh, /美国 6月 CPI/);
+  assert.doesNotMatch(snapshot.event.title.zh, /June/);
   assert.ok(snapshot.warnings.includes("okx_news_credentials_missing"));
 });
 

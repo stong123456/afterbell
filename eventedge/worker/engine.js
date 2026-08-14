@@ -36,6 +36,11 @@ function bilingual(en, zh) {
   return { en, zh };
 }
 
+function chinesePeriod(period) {
+  const month = Number(String(period ?? "").replace(/^M/, ""));
+  return Number.isInteger(month) && month >= 1 && month <= 12 ? `${month}月` : "未知月份";
+}
+
 function plans(recommendedDecision) {
   const shared = { notionalCap: "$100,000", slippage: "0.18%", expiresInMinutes: 30 };
   return {
@@ -127,6 +132,8 @@ export async function buildSnapshot({ cpi, market, news, xlayer, errors = [], no
     : `evt_market_snapshot_${generatedAt.slice(0, 16).replace(/[-:T]/g, "")}`;
   const cpiYoy = cpi?.yoyPct;
   const cpiMom = cpi?.momPct;
+  const cpiPeriodZh = cpi ? chinesePeriod(cpi.period) : "未知月份";
+  const cpiViaFred = cpi?.provider?.includes("St. Louis");
   const cpiYoyLabel = cpiYoy === null || cpiYoy === undefined
     ? String(cpi?.indexValue ?? "—")
     : `${cpiYoy.toFixed(2)}% YoY`;
@@ -138,10 +145,10 @@ export async function buildSnapshot({ cpi, market, news, xlayer, errors = [], no
   if (cpi) {
     sources.push(liveSource({
       id: "bls_live",
-      name: bilingual("U.S. BLS", "美国劳工统计局"),
+      name: bilingual(cpiViaFred ? "FRED / BLS CPI" : "U.S. BLS", cpiViaFred ? "FRED / 美国劳工统计局 CPI" : "美国劳工统计局"),
       headline: bilingual(
         `CPI ${cpi.periodName} ${cpi.year}: ${cpiYoyLabel}`,
-        `${cpi.year}年${cpi.periodName} CPI：${cpiYoyLabelZh}`,
+        `${cpi.year}年${cpiPeriodZh} CPI：${cpiYoyLabelZh}`,
       ),
       detail: bilingual(`Seasonally adjusted MoM ${pct(cpiMom)}`, `季调环比 ${pct(cpiMom)}`),
       timestamp: cpi.fetchedAt,
@@ -216,7 +223,7 @@ export async function buildSnapshot({ cpi, market, news, xlayer, errors = [], no
       id: eventId,
       title: bilingual(
         cpi ? `U.S. CPI ${cpi.periodName}: ${cpiYoyLabel}` : "Live cross-market event snapshot",
-        cpi ? `美国 ${cpi.periodName} CPI：${cpiYoyLabelZh}` : "实时跨市场事件快照",
+        cpi ? `美国 ${cpiPeriodZh} CPI：${cpiYoyLabelZh}` : "实时跨市场事件快照",
       ),
       timestamp: bilingual(
         `${generatedAt.replace("T", " ").slice(0, 19)} UTC`,
@@ -251,7 +258,7 @@ export async function buildSnapshot({ cpi, market, news, xlayer, errors = [], no
         title: bilingual("Official CPI release", "官方 CPI 发布"),
         subtitle: bilingual(
           cpi ? `(${cpi.periodName} ${cpi.year})` : "(unavailable)",
-          cpi ? `（${cpi.year}年${cpi.periodName}）` : "（不可用）",
+          cpi ? `（${cpi.year}年${cpiPeriodZh}）` : "（不可用）",
         ),
         value: cpi ? cpiYoyLabel : "—",
         delta: bilingual(cpi ? `MoM ${pct(cpiMom)}` : "No official observation", cpi ? `环比 ${pct(cpiMom)}` : "暂无官方观测"),
