@@ -4,8 +4,8 @@ function hasDatabase(env) {
   return Boolean(env?.DB?.prepare);
 }
 
-export async function cachedSource(env, key, ttlMs, loader, now = Date.now()) {
-  if (hasDatabase(env)) {
+export async function cachedSource(env, key, ttlMs, loader, now = Date.now(), force = false) {
+  if (!force && hasDatabase(env)) {
     try {
       const row = await env.DB.prepare(
         "SELECT payload_json, expires_at FROM source_cache WHERE cache_key = ?",
@@ -14,7 +14,7 @@ export async function cachedSource(env, key, ttlMs, loader, now = Date.now()) {
     } catch {
       // A fresh deployment may briefly serve before migrations settle. Fall back to memory.
     }
-  } else {
+  } else if (!force) {
     const cached = memoryCache.get(key);
     if (cached && cached.expiresAt > now) return cached.value;
   }

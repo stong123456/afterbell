@@ -3,6 +3,7 @@ import test from "node:test";
 import { maybeEnhanceWithAi } from "../worker/ai.js";
 import { fetchBlsCpi, fetchOkxMarkets, fetchXLayerStatus } from "../worker/data-sources.js";
 import { buildSnapshot } from "../worker/engine.js";
+import { cachedSource } from "../worker/storage.js";
 
 function ok(data) {
   return new Response(JSON.stringify(data), {
@@ -109,4 +110,16 @@ test("fails safely to deterministic guardrails when no AI secret is configured",
     throw new Error("network must not be called");
   });
   assert.equal(result.engine.aiStatus, "not_configured");
+});
+
+test("a forced refresh bypasses an otherwise fresh source cache", async () => {
+  let loads = 0;
+  const key = `force-refresh-${Date.now()}`;
+  const loader = async () => ({ generation: ++loads });
+  const first = await cachedSource({}, key, 60_000, loader, 1_000);
+  const cached = await cachedSource({}, key, 60_000, loader, 2_000);
+  const forced = await cachedSource({}, key, 60_000, loader, 3_000, true);
+  assert.equal(first.generation, 1);
+  assert.equal(cached.generation, 1);
+  assert.equal(forced.generation, 2);
 });

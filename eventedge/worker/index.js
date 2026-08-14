@@ -53,10 +53,10 @@ export async function createLiveSnapshot(env, fetcher = fetch, force = false, no
   }
 
   const tasks = await Promise.allSettled([
-    cachedSource(env, "bls-cpi", 6 * 60 * 60 * 1_000, () => fetchBlsCpi(fetcher), now),
-    cachedSource(env, "okx-public-market", 15_000, () => fetchOkxMarkets(fetcher), now),
-    cachedSource(env, "okx-social-news", 60_000, () => fetchOkxNews(env, fetcher), now),
-    cachedSource(env, "xlayer-testnet-head", 10_000, () => fetchXLayerStatus(fetcher), now),
+    cachedSource(env, "bls-cpi", 6 * 60 * 60 * 1_000, () => fetchBlsCpi(fetcher), now, force),
+    cachedSource(env, "okx-public-market", 15_000, () => fetchOkxMarkets(fetcher), now, force),
+    cachedSource(env, "okx-social-news", 60_000, () => fetchOkxNews(env, fetcher), now, force),
+    cachedSource(env, "xlayer-testnet-head", 10_000, () => fetchXLayerStatus(fetcher), now, force),
   ]);
   const errors = [];
   const snapshot = await buildSnapshot({
