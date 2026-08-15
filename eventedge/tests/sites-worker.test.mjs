@@ -75,6 +75,19 @@ test("exposes only non-secret live capability configuration", async () => {
   assert.equal(JSON.stringify(payload).includes("never-return"), false);
 });
 
+test("reports the deterministic provider without exposing or calling a stale model secret", async () => {
+  const response = await worker.fetch(new Request("https://example.test/api/config"), {
+    ASSETS: { fetch: async () => new Response("missing", { status: 404 }) },
+    AI_PROVIDER: "deterministic",
+    OPENAI_API_KEY: "never-return-this-model-secret",
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(payload.data.openAiAnalysis, false);
+  assert.equal(payload.data.aiProvider, "deterministic");
+  assert.equal(JSON.stringify(payload).includes("never-return"), false);
+});
+
 test("rejects malformed receipt syncs before any chain lookup", async () => {
   const response = await worker.fetch(new Request("https://example.test/api/receipts", {
     method: "POST",

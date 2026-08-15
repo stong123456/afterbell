@@ -126,6 +126,17 @@ test("fails safely to deterministic guardrails when no AI secret is configured",
   assert.equal(result.engine.aiStatus, "not_configured");
 });
 
+test("honors the deterministic provider even when a stale AI secret remains", async () => {
+  const snapshot = { engine: { name: "EventEdge Engine", aiStatus: "unknown" } };
+  const result = await maybeEnhanceWithAi({
+    AI_PROVIDER: "deterministic",
+    OPENAI_API_KEY: "stale-secret-that-must-not-be-used",
+  }, snapshot, () => {
+    throw new Error("network must not be called");
+  });
+  assert.equal(result.engine.aiStatus, "deterministic");
+});
+
 test("a forced refresh bypasses an otherwise fresh source cache", async () => {
   let loads = 0;
   const key = `force-refresh-${Date.now()}`;

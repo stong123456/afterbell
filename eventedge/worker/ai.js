@@ -17,9 +17,14 @@ function validAnalysis(value) {
     typeof value.interpretationZh === "string" && value.interpretationZh.length <= 900;
 }
 
+export function isExternalAiEnabled(env) {
+  return env?.AI_PROVIDER !== "deterministic" && Boolean(env?.OPENAI_API_KEY);
+}
+
 export async function maybeEnhanceWithAi(env, snapshot, fetcher = fetch) {
-  if (!env?.OPENAI_API_KEY) {
-    return { ...snapshot, engine: { ...snapshot.engine, aiStatus: "not_configured" } };
+  if (!isExternalAiEnabled(env)) {
+    const aiStatus = env?.AI_PROVIDER === "deterministic" ? "deterministic" : "not_configured";
+    return { ...snapshot, engine: { ...snapshot.engine, aiStatus } };
   }
 
   const controller = new AbortController();

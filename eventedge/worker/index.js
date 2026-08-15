@@ -1,4 +1,4 @@
-import { maybeEnhanceWithAi } from "./ai.js";
+import { isExternalAiEnabled, maybeEnhanceWithAi } from "./ai.js";
 import {
   fetchBlsCpi,
   fetchOkxMarkets,
@@ -142,7 +142,10 @@ async function handleApi(request, env) {
       data: {
         okxPublicMarket: true,
         okxSocialNews: Boolean(env?.OKX_API_KEY && env?.OKX_API_SECRET && env?.OKX_API_PASSPHRASE),
-        openAiAnalysis: Boolean(env?.OPENAI_API_KEY),
+        openAiAnalysis: isExternalAiEnabled(env),
+        aiProvider: env?.AI_PROVIDER === "deterministic"
+          ? "deterministic"
+          : isExternalAiEnabled(env) ? "openai" : "none",
         xLayerChainId: 1952,
         refreshSeconds: 15,
       },
