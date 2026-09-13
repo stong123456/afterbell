@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {basis,stress,challenge,scenarios} from '../src/research.mjs';
+import {mapMarket,mapNews} from '../stone-adapter.mjs';
+test('basis normalizes FX and share entitlement',()=>{assert.equal(basis({token:200,close:100,fx:1,ratio:2}),0);assert.equal(basis({token:1,close:0}),null);assert.equal(basis({token:NaN,close:100}),null);});
+test('shock bounds and missing evidence',()=>{assert.equal(stress(10000,-5),-500);assert.equal(stress(100,-101),null);assert.equal(challenge('我准备买入 NVDA 因为周末超跌',scenarios[0]).probability,null);assert.throws(()=>challenge('买',scenarios[0]));});
+test('market adapter excludes derivative lookalikes and synthetic quotes',()=>{let d={updatedAt:new Date().toISOString(),assets:[{underlying:'NVDA',venue:'Bitget',productType:'tokenized-perpetual',symbol:'rNVDA',price:12,feedMode:'live'}]};assert.equal(mapMarket(d).assets[0].price,null);d.assets[0].productType='tokenized-spot';assert.equal(mapMarket(d).assets[0].price,12);assert.equal(mapMarket(d).assets[0].quotedAt,null);d.assets[0].feedMode='fallback';assert.equal(mapMarket(d).assets[0].price,null);});
+test('editorial preserves provenance and rejects invalid dates and links',()=>{let item={id:'one',title:'NVDA earnings',category:'币股',url:'https://example.com/report',publishedAt:'2026-09-13T00:00:00Z',relatedAssets:['NVDA']};assert.equal(mapNews({items:[item]}).events[0].source,item.url);assert.equal(mapNews({items:[{...item,url:'javascript:alert(1)'}]}).events.length,0);assert.equal(mapNews({items:[{...item,publishedAt:'bad'}]}).events.length,0);});

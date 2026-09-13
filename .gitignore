@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+.npm-cache/
+.env.*
+!.env.example
+design/source-*.json
+design/instruments.json
+*.zip
