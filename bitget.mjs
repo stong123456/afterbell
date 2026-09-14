@@ -32,3 +32,9 @@ export async function bitgetEvidence(assets){
  const results=await Promise.all(assets.filter(s=>symbols.includes(s)).slice(0,3).map(bitgetMarket));
  return results.filter(r=>r.price!==null&&r.price!==undefined).map((r,i)=>({id:`BG${i+1}`,kind:'market-snapshot',title:`Bitget ${r.pair} · direct snapshot`,summary:JSON.stringify({...r,candles:undefined}),url:r.source,publishedAt:null,scope:'direct-token-quote-not-equity-close; timestamps-in-summary'}));
 }
+export function browserMarketEvidence(value,assets,now=Date.now()){
+ if(!value||!assets.includes(value.symbol)||!symbols.includes(value.symbol)||value.pair!==`R${value.symbol}USDT`||!Number.isFinite(value.price)||value.price<=0||!Number.isFinite(value.quoteTimestamp)||Math.abs(now-value.quoteTimestamp)>120000)return [];
+ const fields=['symbol','pair','price','quoteTimestamp','bookTimestamp','retrievedAt','change24hPct','volume24hUSDT','spreadPct','bidDepthUSDT','askDepthUSDT'];
+ const safe=Object.fromEntries(fields.map(k=>[k,value[k]]).filter(([,v])=>typeof v==='number'?Number.isFinite(v):typeof v==='string'&&v.length<80));
+ return[{id:'BG_BROWSER',kind:'market-snapshot',title:`Bitget ${value.pair} · browser snapshot`,summary:JSON.stringify(safe),url:`${base}/api/v2/spot/market/tickers?symbol=${value.pair}`,publishedAt:null,scope:'browser-submitted; format-validated-not-server-source-verified; not-equity-close'}];
+}

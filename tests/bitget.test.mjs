@@ -16,3 +16,6 @@ test('event comparison excludes the event-containing candle and stale baselines'
  assert.equal(eventMove(market,new Date(10*h).toISOString()),null);
  assert.equal(eventMove(market,undefined),null);
 });
+
+import {browserMarketEvidence} from '../bitget.mjs';
+test('browser snapshots are bounded, labelled and never treated as verified server data',()=>{const v={symbol:'NVDA',pair:'RNVDAUSDT',price:100,quoteTimestamp:Date.now(),candles:['ignored']};assert.match(browserMarketEvidence(v,['NVDA'])[0].scope,/not-server-source-verified/);assert.deepEqual(browserMarketEvidence(v,['TSLA']),[]);assert.deepEqual(browserMarketEvidence({...v,quoteTimestamp:1},['NVDA']),[]);assert.ok(!browserMarketEvidence(v,['NVDA'])[0].summary.includes('candles'));});
