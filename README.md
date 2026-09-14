@@ -23,4 +23,4 @@ English: AfterBell is a bilingual event research desk built with React, Vite and
 
 ## AskStone 域名接入准备
 
-建议保留旧版 `askstone.xyz`，独立接入 `afterbell.askstone.xyz`。已添加 Docker 和 HTTPS 域名配置，尚未上线或修改 DNS。见 [接入说明](docs/ASKSTONE-INTEGRATION.md)。
+`askstone.xyz` 将以 AfterBell 为主产品。已复用旧 AskStone 的宏观/跨资产来源，并整合事件传导工作台和报告证据指纹。域名配置已改为根域名，尚未上线或修改 DNS。见 [接入说明](docs/ASKSTONE-INTEGRATION.md)。

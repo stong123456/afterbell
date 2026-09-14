@@ -9,4 +9,6 @@
 !stone-adapter.mjs
 !qwen.mjs
 !deployment.mjs
+!context.mjs
+!askstone-sources.mjs
 !Dockerfile

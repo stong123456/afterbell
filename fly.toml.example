@@ -9,7 +9,7 @@ primary_region = "sin"
   NODE_ENV = "production"
   PORT = "8080"
   BIND_ADDRESS = "0.0.0.0"
-  PUBLIC_ORIGINS = "https://afterbell.askstone.xyz"
+  PUBLIC_ORIGINS = "https://askstone.xyz"
 
 [http_service]
   internal_port = 8080
@@ -25,7 +25,7 @@ primary_region = "sin"
     path = "/api/health"
     timeout = "5s"
     [http_service.checks.headers]
-      Host = "afterbell.askstone.xyz"
+      Host = "askstone.xyz"
 
 [[vm]]
   size = "shared-cpu-1x"

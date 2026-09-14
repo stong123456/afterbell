@@ -5,9 +5,11 @@ import {resolve,extname,sep} from 'node:path';
 import {challenge,scenarios} from './src/research.mjs';
 import {modelConfig,qwenChallenge} from './qwen.mjs';
 import {deploymentConfig,requestAllowed} from './deployment.mjs';
+import {researchContext,contextEvidence} from './context.mjs';
+import {createHash} from 'node:crypto';
 try{process.loadEnvFile('.env');}catch(e){if(e.code!=='ENOENT')throw e;}
 const root=resolve('dist'),deployment=deploymentConfig(),port=deployment.port;
-const archivedEvents=new Map();let activeModels=0;let latestMarket=null;
+const archivedEvents=new Map();let activeModels=0;let latestMarket=null;let latestContext=null;
 function remember(events){for(const e of events)archivedEvents.set(e.id,e);while(archivedEvents.size>300)archivedEvents.delete(archivedEvents.keys().next().value);}
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 http.createServer(async(req,res)=>{
@@ -15,6 +17,7 @@ http.createServer(async(req,res)=>{
   if(!deployment.hosts.has(req.headers.host))return send(res,403,{error:'HOST_NOT_ALLOWED'});
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/api/health')return send(res,200,{ok:true,version:'0.2.0',ai:modelConfig()});
+  if(url.pathname==='/api/context'){latestContext=await researchContext();return send(res,200,latestContext);}
   if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
   if(url.pathname==='/api/news'){const news=await stoneNews();remember(news.events);return send(res,200,news);}
   if(url.pathname==='/api/challenge'&&req.method==='POST'){
@@ -32,9 +35,11 @@ http.createServer(async(req,res)=>{
    if(input.mode==='qwen'){
     if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
     if(!modelConfig().configured)return send(res,503,{error:'QWEN_NOT_CONFIGURED'});
-    activeModels++;try{return send(res,200,await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh'));}finally{activeModels--;}
+    evidence.push(...contextEvidence(latestContext));
+    activeModels++;try{const report=await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh');return send(res,200,{...report,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});}finally{activeModels--;}
    }
-   return send(res,200,{...challenge(input.thesis,event),evidence,eventId:event.id});
+   evidence.push(...contextEvidence(latestContext));
+   return send(res,200,{...challenge(input.thesis,event),evidence,eventId:event.id,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});
   }
   if(url.pathname.startsWith('/api/'))return send(res,404,{error:'NOT_FOUND'});
   let file=resolve(root,'.'+decodeURIComponent(url.pathname));
