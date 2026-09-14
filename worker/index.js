@@ -44,8 +44,7 @@ export async function handle(request,env){
   if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:market.source,publishedAt:market.updatedAt,scope:'aggregated-quote-not-equity-close'});
   evidence.push(...await bitgetEvidence(event.assets));
   // Background is optional; this request does not delay an analysis for new CPI retrieval.
-  const context=await caches.default.match(new Request(url.origin+'/__afterbell_context'));
-  if(context)evidence.push(...contextEvidence(await context.json()));
+  try{const context=await caches.default.match(new Request(url.origin+'/__afterbell_context'));if(context)evidence.push(...contextEvidence(await context.json()));}catch{/* Optional cache cannot block research. */}
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(evidence)));
   const evidenceHash=[...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');
   if(input.mode==='byok'){
