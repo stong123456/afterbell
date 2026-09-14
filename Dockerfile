@@ -4,7 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
-RUN npm run build
+RUN npx vite build
 
 FROM node:22-alpine
 ENV NODE_ENV=production PORT=8080 BIND_ADDRESS=0.0.0.0
