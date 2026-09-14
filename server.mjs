@@ -4,20 +4,21 @@ import {readFile} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
 import {challenge,scenarios} from './src/research.mjs';
 import {modelConfig,qwenChallenge} from './qwen.mjs';
+import {deploymentConfig,requestAllowed} from './deployment.mjs';
 try{process.loadEnvFile('.env');}catch(e){if(e.code!=='ENOENT')throw e;}
-const root=resolve('dist'),port=Number(process.env.PORT||4318);
+const root=resolve('dist'),deployment=deploymentConfig(),port=deployment.port;
 const archivedEvents=new Map();let activeModels=0;let latestMarket=null;
 function remember(events){for(const e of events)archivedEvents.set(e.id,e);while(archivedEvents.size>300)archivedEvents.delete(archivedEvents.keys().next().value);}
 function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 http.createServer(async(req,res)=>{
  try{
-  if(![`127.0.0.1:${port}`,`localhost:${port}`].includes(req.headers.host))return send(res,403,{error:'HOST_NOT_ALLOWED'});
+  if(!deployment.hosts.has(req.headers.host))return send(res,403,{error:'HOST_NOT_ALLOWED'});
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/api/health')return send(res,200,{ok:true,version:'0.2.0',ai:modelConfig()});
   if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
   if(url.pathname==='/api/news'){const news=await stoneNews();remember(news.events);return send(res,200,news);}
   if(url.pathname==='/api/challenge'&&req.method==='POST'){
-   if(req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(res,403,{error:'ORIGIN_NOT_ALLOWED'});
+   if(!requestAllowed(req.headers,deployment))return send(res,403,{error:'ORIGIN_NOT_ALLOWED'});
    if(!req.headers['content-type']?.startsWith('application/json'))return send(res,415,{error:'JSON_REQUIRED'});
    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12000)return send(res,413,{error:'REQUEST_TOO_LARGE'});chunks.push(chunk);}
    const input=JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -41,4 +42,4 @@ http.createServer(async(req,res)=>{
   if(!extname(file))file=resolve(root,'index.html');
   try{const data=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'})[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff'});res.end(data);}catch{send(res,404,{error:'NOT_FOUND'});}
  }catch(e){send(res,/^QWEN_|^MODEL_/.test(e.message)?502:400,{error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'});}
-}).listen(port,'127.0.0.1',()=>console.log(`AfterBell http://127.0.0.1:${port}`));
+}).listen(port,deployment.bind,()=>console.log(`AfterBell listening on ${deployment.bind}:${port}`));

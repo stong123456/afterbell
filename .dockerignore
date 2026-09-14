@@ -1,0 +1,12 @@
+*
+!package.json
+!package-lock.json
+!index.html
+!vite.config.js
+!src/
+!src/**
+!server.mjs
+!stone-adapter.mjs
+!qwen.mjs
+!deployment.mjs
+!Dockerfile

@@ -1,0 +1,32 @@
+# Copy to fly.toml after creating a dedicated Fly app; replace the app name.
+app = "REPLACE_WITH_AFTERBELL_APP_NAME"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  BIND_ADDRESS = "0.0.0.0"
+  PUBLIC_ORIGINS = "https://afterbell.askstone.xyz"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "5s"
+    [http_service.checks.headers]
+      Host = "afterbell.askstone.xyz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

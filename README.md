@@ -20,3 +20,7 @@ English: AfterBell is a bilingual event research desk built with React, Vite and
 ## 0.2 迭代
 
 新增搜索与时间筛选、本地研究记录、证据清单、Qwen 配置与引用校验。见 [迭代说明与限制](docs/ITERATION-02.md)。
+
+## AskStone 域名接入准备
+
+建议保留旧版 `askstone.xyz`，独立接入 `afterbell.askstone.xyz`。已添加 Docker 和 HTTPS 域名配置，尚未上线或修改 DNS。见 [接入说明](docs/ASKSTONE-INTEGRATION.md)。
