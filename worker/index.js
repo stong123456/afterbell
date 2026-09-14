@@ -64,5 +64,5 @@ export default {async fetch(request,env,ctx){
   const response=await handle(request,env);
   if(new URL(request.url).pathname==='/api/context'&&response.ok){const cached=new Response(response.clone().body,{headers:{'content-type':'application/json','cache-control':'public,max-age=60'}});ctx.waitUntil(caches.default.put(new Request(new URL('/__afterbell_context',request.url)),cached));}
   const secured=new Response(response.body,response);secured.headers.set('x-content-type-options','nosniff');secured.headers.set('referrer-policy','strict-origin-when-cross-origin');secured.headers.set('x-frame-options','DENY');return secured;
- }catch(e){return json({error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'},e.message==='REQUEST_TOO_LARGE'?413:/HTTP_|JSON_INVALID|EVIDENCE_INVALID/.test(e.message)?502:400);}
+ }catch(e){console.error('AFTERBELL_FAILURE',e.name,String(e.stack||'').split('\n').slice(1,3).join('\n'));return json({error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'},e.message==='REQUEST_TOO_LARGE'?413:/HTTP_|JSON_INVALID|EVIDENCE_INVALID/.test(e.message)?502:400);}
 }};

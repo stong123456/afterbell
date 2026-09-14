@@ -5,7 +5,7 @@ const positive=x=>n(x)>0?n(x):null;
 async function load(path,ttl=15000){
  const old=cache.get(path);if(old&&Date.now()-old.at<ttl)return old.value;
  if(pending.has(path))return pending.get(path);
- const job=(async()=>{const r=await fetch(base+path,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw Error('BITGET_UNAVAILABLE');const d=await r.json();if(d.code!=='00000')throw Error('BITGET_UNAVAILABLE');cache.set(path,{at:Date.now(),value:d.data});return d.data;})();pending.set(path,job);
+ const job=(async()=>{const r=await fetch(base+path,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw Error('BITGET_HTTP_'+r.status);const d=await r.json();if(d.code!=='00000')throw Error('BITGET_CODE_'+String(d.code).replace(/[^0-9]/g,''));cache.set(path,{at:Date.now(),value:d.data});return d.data;})();pending.set(path,job);
  try{return await job;}finally{pending.delete(path);}
 }
 export function normalizeMarket(symbol,info,ticker,book,candles,now=Date.now()){
@@ -26,7 +26,7 @@ export async function bitgetMarket(symbol){
   const results=await Promise.allSettled([load(`/api/v2/spot/market/tickers?symbol=${pair}`),load(`/api/v2/spot/market/orderbook?symbol=${pair}&type=step0&limit=5`),load(`/api/v2/spot/market/candles?symbol=${pair}&granularity=1h&limit=168`,60000)]);
   const value=i=>results[i].status==='fulfilled'?results[i].value:null;
   return normalizeMarket(symbol,info,value(0)?.[0],value(1),value(2));
- }catch{return{status:'unavailable',symbol,reason:'BITGET_UNAVAILABLE'};}
+ }catch(e){return{status:'unavailable',symbol,reason:/^BITGET_(HTTP|CODE)_/.test(e.message)?e.message:'BITGET_UNAVAILABLE'};}
 }
 export async function bitgetEvidence(assets){
  const results=await Promise.all(assets.filter(s=>symbols.includes(s)).slice(0,3).map(bitgetMarket));
