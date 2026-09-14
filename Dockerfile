@@ -12,6 +12,7 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs ./
 COPY src/research.mjs ./src/research.mjs
+COPY src/providers.mjs ./src/providers.mjs
 USER node
 EXPOSE 8080
 CMD ["node", "server.mjs"]

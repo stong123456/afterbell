@@ -26,17 +26,18 @@ http.createServer(async(req,res)=>{
    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12000)return send(res,413,{error:'REQUEST_TOO_LARGE'});chunks.push(chunk);}
    const input=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    if(typeof input.thesis!=='string'||input.thesis.trim().length<10||input.thesis.length>2000)return send(res,400,{error:'THESIS_LENGTH'});
-   if(!['rules','qwen'].includes(input.mode||'rules'))return send(res,400,{error:'UNKNOWN_MODE'});
+   if(!['rules','qwen','byok'].includes(input.mode||'rules'))return send(res,400,{error:'UNKNOWN_MODE'});
    const event=scenarios.find(e=>e.id===input.eventId)||archivedEvents.get(input.eventId);
    if(!event)return send(res,409,{error:'EVENT_EXPIRED_REFRESH'});
    const evidence=[{id:'E1',kind:event.kind,title:event.title,summary:event.summary,url:event.source,publishedAt:event.publishedAt,scope:'headline-and-summary-only'}];
    const quotes=latestMarket?.assets?.filter(q=>event.assets.includes(q.symbol)&&q.price!==null)||[];
    if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:latestMarket.source,publishedAt:latestMarket.updatedAt,scope:'aggregated-quote-not-equity-close'});
-   if(input.mode==='qwen'){
+   if(input.mode==='qwen'||input.mode==='byok'){
     if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
-    if(!modelConfig().configured)return send(res,503,{error:'QWEN_NOT_CONFIGURED'});
+    if(input.mode==='qwen'&&!modelConfig().configured)return send(res,503,{error:'QWEN_NOT_CONFIGURED'});
+    if(input.mode==='byok'&&!input.modelConfig)return send(res,400,{error:'MODEL_KEY_REQUIRED'});
     evidence.push(...contextEvidence(latestContext));
-    activeModels++;try{const report=await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh');return send(res,200,{...report,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});}finally{activeModels--;}
+    activeModels++;try{const report=await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh',input.mode==='byok'?input.modelConfig:undefined);return send(res,200,{...report,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});}finally{activeModels--;}
    }
    evidence.push(...contextEvidence(latestContext));
    return send(res,200,{...challenge(input.thesis,event),evidence,eventId:event.id,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});
