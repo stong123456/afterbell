@@ -1,8 +1,44 @@
 import {stoneMarket,stoneNews} from './stone-adapter.mjs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
-import {resolve,extname} from 'node:path';
-import {symbols,challenge,scenarios} from './src/research.mjs';
-const root=resolve('dist'); const port=Number(process.env.PORT||4318);
-function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
-http.createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost');if(url.pathname==='/api/health')return send(res,200,{ok:true,model:'rules',version:'0.1.0'});if(url.pathname==='/api/market')return send(res,200,await stoneMarket());if(url.pathname==='/api/news')return send(res,200,await stoneNews());if(url.pathname==='/api/challenge'&&req.method==='POST'){let body='';for await(const chunk of req){body+=chunk;if(body.length>10000)return send(res,413,{error:'Request too large'});}const input=JSON.parse(body);const event=scenarios.find(e=>e.id===input.eventId)||(await stoneNews()).events.find(e=>e.id===input.eventId);if(!event)return send(res,400,{error:'Unknown event'});return send(res,200,challenge(input.thesis,event));}if(url.pathname.startsWith('/api/'))return send(res,404,{error:'Not found'});const pathname=decodeURIComponent(url.pathname);let file=resolve(root,'.'+pathname);if(file!==root&&!file.startsWith(root+'/')&&!file.startsWith(root+'\\'))return send(res,403,{error:'Forbidden'});if(!extname(file))file=resolve(root,'index.html');try{const data=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'})[extname(file)]||'application/octet-stream'});res.end(data);}catch{send(res,404,{error:'Build the frontend first'});}}catch(e){send(res,400,{error:e.message});}}).listen(port,'127.0.0.1',()=>console.log(`AfterBell http://127.0.0.1:${port}`));
+import {resolve,extname,sep} from 'node:path';
+import {challenge,scenarios} from './src/research.mjs';
+import {modelConfig,qwenChallenge} from './qwen.mjs';
+try{process.loadEnvFile('.env');}catch(e){if(e.code!=='ENOENT')throw e;}
+const root=resolve('dist'),port=Number(process.env.PORT||4318);
+const archivedEvents=new Map();let activeModels=0;let latestMarket=null;
+function remember(events){for(const e of events)archivedEvents.set(e.id,e);while(archivedEvents.size>300)archivedEvents.delete(archivedEvents.keys().next().value);}
+function send(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
+http.createServer(async(req,res)=>{
+ try{
+  if(![`127.0.0.1:${port}`,`localhost:${port}`].includes(req.headers.host))return send(res,403,{error:'HOST_NOT_ALLOWED'});
+  const url=new URL(req.url,'http://localhost');
+  if(url.pathname==='/api/health')return send(res,200,{ok:true,version:'0.2.0',ai:modelConfig()});
+  if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
+  if(url.pathname==='/api/news'){const news=await stoneNews();remember(news.events);return send(res,200,news);}
+  if(url.pathname==='/api/challenge'&&req.method==='POST'){
+   if(req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)return send(res,403,{error:'ORIGIN_NOT_ALLOWED'});
+   if(!req.headers['content-type']?.startsWith('application/json'))return send(res,415,{error:'JSON_REQUIRED'});
+   let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12000)return send(res,413,{error:'REQUEST_TOO_LARGE'});chunks.push(chunk);}
+   const input=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+   if(typeof input.thesis!=='string'||input.thesis.trim().length<10||input.thesis.length>2000)return send(res,400,{error:'THESIS_LENGTH'});
+   if(!['rules','qwen'].includes(input.mode||'rules'))return send(res,400,{error:'UNKNOWN_MODE'});
+   const event=scenarios.find(e=>e.id===input.eventId)||archivedEvents.get(input.eventId);
+   if(!event)return send(res,409,{error:'EVENT_EXPIRED_REFRESH'});
+   const evidence=[{id:'E1',kind:event.kind,title:event.title,summary:event.summary,url:event.source,publishedAt:event.publishedAt,scope:'headline-and-summary-only'}];
+   const quotes=latestMarket?.assets?.filter(q=>event.assets.includes(q.symbol)&&q.price!==null)||[];
+   if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:latestMarket.source,publishedAt:latestMarket.updatedAt,scope:'aggregated-quote-not-equity-close'});
+   if(input.mode==='qwen'){
+    if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
+    if(!modelConfig().configured)return send(res,503,{error:'QWEN_NOT_CONFIGURED'});
+    activeModels++;try{return send(res,200,await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh'));}finally{activeModels--;}
+   }
+   return send(res,200,{...challenge(input.thesis,event),evidence,eventId:event.id});
+  }
+  if(url.pathname.startsWith('/api/'))return send(res,404,{error:'NOT_FOUND'});
+  let file=resolve(root,'.'+decodeURIComponent(url.pathname));
+  if(file!==root&&!file.startsWith(root+sep))return send(res,403,{error:'FORBIDDEN'});
+  if(!extname(file))file=resolve(root,'index.html');
+  try{const data=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'})[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff'});res.end(data);}catch{send(res,404,{error:'NOT_FOUND'});}
+ }catch(e){send(res,/^QWEN_|^MODEL_/.test(e.message)?502:400,{error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'});}
+}).listen(port,'127.0.0.1',()=>console.log(`AfterBell http://127.0.0.1:${port}`));
