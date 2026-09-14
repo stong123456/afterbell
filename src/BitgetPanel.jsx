@@ -1,0 +1,25 @@
+import React,{useEffect,useState} from 'react';
+import {eventMove} from './market-math.mjs';
+export function BitgetPanel({event,lang,report}){
+ const [symbol,setSymbol]=useState(event.assets?.[0]||'NVDA'),[data,setData]=useState(null),[refresh,setRefresh]=useState(0),[busy,setBusy]=useState(false);
+ const t=(zh,en)=>lang==='en'?en:zh;const fmt=x=>Number.isFinite(x)?x.toLocaleString(lang==='en'?'en-US':'zh-CN',{maximumFractionDigits:3}):'—';const stamp=x=>x>0?new Date(x).toISOString():'—';
+ useEffect(()=>{let alive=true;const ctrl=new AbortController();setData(null);setBusy(true);fetch('/api/bitget?symbol='+symbol,{signal:ctrl.signal}).then(r=>r.json()).then(d=>{if(alive)setData(d);}).catch(()=>{if(alive)setData({status:'unavailable'});}).finally(()=>{if(alive)setBusy(false);});return()=>{alive=false;ctrl.abort();};},[symbol,refresh]);
+ const rows=data?.candles||[],move=event.kind==='source'?eventMove(data,event.publishedAt):null;
+ const lo=Math.min(...rows.map(c=>c.close)),hi=Math.max(...rows.map(c=>c.close));const minTime=rows[0]?.time,maxTime=rows.at(-1)?.time;
+ const x=ts=>30+(ts-minTime)/(maxTime-minTime||1)*640,y=p=>155-(p-lo)/(hi-lo||1)*125;
+ const marker=Date.parse(event.publishedAt);let saved;try{saved=report?.evidence?.filter(e=>e.id.startsWith('BG')).map(e=>JSON.parse(e.summary)).find(e=>e.symbol===symbol);}catch{}
+ return <section className="panel detail bitget-panel"><div className="section-head"><h2>Bitget · {t('币股行情','Tokenized stocks')}</h2><button disabled={busy} onClick={()=>setRefresh(n=>n+1)}>{t('刷新行情','Refresh quotes')}</button></div>
+ <div className="filters">{(event.assets?.length?event.assets:['NVDA','AAPL','TSLA','TSM','AMD','XOM']).map(s=><button key={s} className={s===symbol?'selected':''} onClick={()=>setSymbol(s)}>{s}</button>)}</div>
+ {busy?<p role="status">{t('正在获取 Bitget 官方数据…','Loading Bitget public data…')}</p>:!data?.pair?<p role="status">{t('暂无可验证的官方币股数据。','Verified tokenized stock data unavailable.')}</p>:<>
+ <p>{data.pair} · {data.tradingStatus} · {t('数据抓取','Retrieved')} {data.retrievedAt}</p>
+ <div className="context-grid">{[[t('最新价 USDT','Latest USDT'),data.price],[t('24h 涨跌 %','24h change %'),data.change24hPct],[t('24h 成交额 USDT','24h turnover USDT'),data.volume24hUSDT],[t('盘口价差 %','Book spread %'),data.spreadPct]].map(([label,value])=><article key={label}><small>{label}</small><h2>{fmt(value)}</h2></article>)}</div>
+ <p>{t('行情时间','Ticker timestamp')} {stamp(data.quoteTimestamp)} · {t('最后成交时间未提供','Last trade time not supplied')}{!data.quoteTimestamp||Date.now()-data.quoteTimestamp>60000?' · '+t('报价时间需复核','Check quote freshness'):''}</p>
+ {rows.length>1?<><svg viewBox="0 0 700 185" role="img" aria-label={t('最近七天小时收盘走势，含当前未结束小时','Hourly closes over up to seven days, including current unfinished hour')} style={{width:'100%',height:'auto'}}><text x="30" y="18" fill="currentColor" fontSize="12">{fmt(hi)} USDT</text><polyline fill="none" stroke="#d8ef60" strokeWidth="2" points={rows.map(c=>`${x(c.time)},${y(c.close)}`).join(' ')}/>{event.kind==='source'&&marker>=minTime&&marker<=maxTime&&<><line x1={x(marker)} x2={x(marker)} y1="22" y2="158" stroke="#f4a66b" strokeDasharray="4 4"/><text x={Math.min(x(marker)+4,580)} y="34" fill="#f4a66b" fontSize="12">{t('事件发布','Event')}</text></>}<text x="30" y="180" fill="currentColor" fontSize="12">{stamp(minTime).slice(0,16)} UTC</text><text x="470" y="180" fill="currentColor" fontSize="12">{stamp(maxTime).slice(0,16)} UTC</text></svg><p>{t('小时收盘走势；最后一根可能尚未结束。事件超出图表范围时不画标记。','Hourly closes; the last candle may be incomplete. Events outside this range have no marker.')}</p></>:<p>{t('K 线不可用','Candles unavailable')}</p>}
+ <p>{t('相对事件前已收盘小时 K 线','Versus the last completed pre-event hourly candle')}: {fmt(move?.changePct)}% {move?'· '+fmt(move.baseline)+' USDT · '+stamp(move.baselineAt):t('（事件时间或基准不足）','(event time or baseline unavailable)')}</p>
+ <div className="context-grid">{[['bids',t('买盘前 5 档','Top 5 bids'),'bidDepthUSDT'],['asks',t('卖盘前 5 档','Top 5 asks'),'askDepthUSDT']].map(([key,title,total])=><article key={key}><h3>{title}</h3>{data[key].length?data[key].map(([p,q],i)=><p key={i}>{fmt(p)} USDT × {fmt(q)}</p>):<p>—</p>}<small>{t('可见档位总额','Visible notional')}: {data[key].length?fmt(data[total]):'—'} USDT</small></article>)}</div>
+ <p>{t('盘口时间','Book timestamp')}: {stamp(data.bookTimestamp)} · {t('仅显示返回的前五档，不代表完整流动性；非可执行报价。','Returned top five levels only, not total liquidity or an executable quote.')}</p>
+ {saved&&<p className="notice">{t('报告行情回顾','Report snapshot review')}: {fmt(saved.price)} → {fmt(data.price)} USDT · {fmt(data.price&&saved.price?(data.price/saved.price-1)*100:null)}%<br/>{t('只比较两次快照，不代表交易收益或预测准确率。','Compares two snapshots, not trade returns or forecast accuracy.')}</p>}
+ <a href={data.source} target="_blank" rel="noreferrer">{t('核实 Bitget 官方行情','Verify Bitget public quote')}</a>
+ <p className="notice">{t('币股现货行情不等同于美股收盘价。24h 变化和事件前后变化均不构成因果证据或开盘预测。','Token spot quotes are not equity closes. Neither 24h nor event-window changes establish causality or predict the stock opening.')}</p>
+ </>}</section>;
+}

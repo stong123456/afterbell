@@ -1,3 +1,4 @@
+import {bitgetMarket,bitgetEvidence} from '../bitget.mjs';
 import {stoneNews,stoneMarket} from '../stone-adapter.mjs';
 import {researchContext,contextEvidence} from '../context.mjs';
 import {challenge,scenarios} from '../src/research.mjs';
@@ -23,6 +24,7 @@ async function body(request){
 }
 export async function handle(request,env){
  const url=new URL(request.url);
+ if(url.pathname==='/api/bitget'&&request.method==='GET')return json(await bitgetMarket(url.searchParams.get('symbol')));
  if(url.pathname==='/api/health')return json({ok:true,product:'AfterBell',version:'0.3.0',ai:{provider:'byok',configured:false,model:'user-provided'}});
  if(url.pathname==='/api/news'&&request.method==='GET'){const news=await stoneNews();await remember(env,news.events||[]);return json(news);}
  if(url.pathname==='/api/market'&&request.method==='GET')return json(await stoneMarket());
@@ -40,6 +42,7 @@ export async function handle(request,env){
   const evidence=[{id:'E1',kind:event.kind,title:event.title,summary:event.summary,url:event.source,publishedAt:event.publishedAt,scope:'headline-and-summary-only'}];
   const market=await stoneMarket();const quotes=market.assets?.filter(q=>event.assets.includes(q.symbol)&&q.price!==null)||[];
   if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:market.source,publishedAt:market.updatedAt,scope:'aggregated-quote-not-equity-close'});
+  evidence.push(...await bitgetEvidence(event.assets));
   // Background is optional; this request does not delay an analysis for new CPI retrieval.
   const context=await caches.default.match(new Request(url.origin+'/__afterbell_context'));
   if(context)evidence.push(...contextEvidence(await context.json()));

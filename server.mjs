@@ -1,3 +1,4 @@
+import {bitgetMarket,bitgetEvidence} from './bitget.mjs';
 import {stoneMarket,stoneNews} from './stone-adapter.mjs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -16,6 +17,7 @@ http.createServer(async(req,res)=>{
  try{
   if(!deployment.hosts.has(req.headers.host))return send(res,403,{error:'HOST_NOT_ALLOWED'});
   const url=new URL(req.url,'http://localhost');
+  if(url.pathname==='/api/bitget')return send(res,200,await bitgetMarket(url.searchParams.get('symbol')));
   if(url.pathname==='/api/health')return send(res,200,{ok:true,version:'0.2.0',ai:modelConfig()});
   if(url.pathname==='/api/context'){latestContext=await researchContext();return send(res,200,latestContext);}
   if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
@@ -32,6 +34,7 @@ http.createServer(async(req,res)=>{
    const evidence=[{id:'E1',kind:event.kind,title:event.title,summary:event.summary,url:event.source,publishedAt:event.publishedAt,scope:'headline-and-summary-only'}];
    const quotes=latestMarket?.assets?.filter(q=>event.assets.includes(q.symbol)&&q.price!==null)||[];
    if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:latestMarket.source,publishedAt:latestMarket.updatedAt,scope:'aggregated-quote-not-equity-close'});
+   evidence.push(...await bitgetEvidence(event.assets));
    if(input.mode==='qwen'||input.mode==='byok'){
     if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
     if(input.mode==='qwen'&&!modelConfig().configured)return send(res,503,{error:'QWEN_NOT_CONFIGURED'});
