@@ -1,4 +1,4 @@
-import {bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
+import {bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
 import {stoneNews,stoneMarket} from '../stone-adapter.mjs';
 import {researchContext,contextEvidence} from '../context.mjs';
 import {challenge,scenarios} from '../src/research.mjs';
@@ -27,7 +27,8 @@ export async function handle(request,env){
  if(url.pathname==='/api/bitget'&&request.method==='GET')return json(await bitgetMarket(url.searchParams.get('symbol')));
  if(url.pathname==='/api/health')return json({ok:true,product:'AfterBell',version:'0.3.0',ai:{provider:'byok',configured:false,model:'user-provided'}});
  if(url.pathname==='/api/news'&&request.method==='GET'){const news=await stoneNews();await remember(env,news.events||[]);return json(news);}
- if(url.pathname==='/api/market'&&request.method==='GET')return json(await stoneMarket());
+ if(url.pathname==='/api/bitget/catalog')return json(await bitgetCatalog());
+  if(url.pathname==='/api/market'&&request.method==='GET')return json(await stoneMarket());
  if(url.pathname==='/api/context'&&request.method==='GET')return json(await researchContext());
  if(url.pathname==='/api/challenge'&&request.method==='POST'){
   if(request.headers.get('origin')&&request.headers.get('origin')!==url.origin)return json({error:'ORIGIN_NOT_ALLOWED'},403);
@@ -51,7 +52,7 @@ export async function handle(request,env){
    if(active>=2)return json({error:'MODEL_BUSY'},429);active++;
    try{return json({...await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh',input.modelConfig),evidenceHash});}finally{active--;}
   }
-  return json({...challenge(input.thesis,event),evidence,eventId:event.id,evidenceHash});
+  return json({...challenge(input.thesis,event,input.lang),evidence,eventId:event.id,evidenceHash});
  }
  if(url.pathname.startsWith('/api/'))return json({error:'NOT_FOUND'},404);
  const response=await env.ASSETS.fetch(request);

@@ -1,4 +1,4 @@
-import {bitgetMarket,bitgetEvidence,browserMarketEvidence} from './bitget.mjs';
+import {bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from './bitget.mjs';
 import {stoneMarket,stoneNews} from './stone-adapter.mjs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -20,6 +20,7 @@ http.createServer(async(req,res)=>{
   if(url.pathname==='/api/bitget')return send(res,200,await bitgetMarket(url.searchParams.get('symbol')));
   if(url.pathname==='/api/health')return send(res,200,{ok:true,version:'0.2.0',ai:modelConfig()});
   if(url.pathname==='/api/context'){latestContext=await researchContext();return send(res,200,latestContext);}
+  if(url.pathname==='/api/bitget/catalog')return send(res,200,await bitgetCatalog());
   if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
   if(url.pathname==='/api/news'){const news=await stoneNews();remember(news.events);return send(res,200,news);}
   if(url.pathname==='/api/challenge'&&req.method==='POST'){
@@ -43,7 +44,7 @@ http.createServer(async(req,res)=>{
     activeModels++;try{const report=await qwenChallenge(input.thesis,event,evidence,input.lang==='en'?'en':'zh',input.mode==='byok'?input.modelConfig:undefined);return send(res,200,{...report,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});}finally{activeModels--;}
    }
    evidence.push(...contextEvidence(latestContext));
-   return send(res,200,{...challenge(input.thesis,event),evidence,eventId:event.id,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});
+   return send(res,200,{...challenge(input.thesis,event,input.lang),evidence,eventId:event.id,evidenceHash:createHash('sha256').update(JSON.stringify(evidence)).digest('hex')});
   }
   if(url.pathname.startsWith('/api/'))return send(res,404,{error:'NOT_FOUND'});
   let file=resolve(root,'.'+decodeURIComponent(url.pathname));

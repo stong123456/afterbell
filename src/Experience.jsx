@@ -1,3 +1,6 @@
+import {MarketExplorer} from './MarketExplorer.jsx';
+import {DecisionPlan} from './DecisionPlan.jsx';
+import {eventLens} from './decision.mjs';
 import React,{useState,useEffect,useRef} from 'react';
 import './experience.css';
 import {localizeTree} from './i18n.mjs';
@@ -7,6 +10,7 @@ const styles=['briefing','studio','workspace'];
 export function Experience({lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report}){
  const t=(zh,en)=>lang==='en'?en:zh;
  const [style,setStyle]=useState(()=>{try{const v=localStorage.getItem('afterbell.style');return styles.includes(v)?v:'workspace';}catch{return 'workspace';}});
+ const [catalog,setCatalog]=useState([]);
  const [limit,setLimit]=useState(12);
  const [asset,setAsset]=useState('All'),[query,setQuery]=useState(''),[started,setStarted]=useState(false),[checking,setChecking]=useState(false);
  const checkRef=useRef(null);
@@ -15,11 +19,13 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
  useEffect(()=>{if(checking)checkRef.current?.scrollIntoView({behavior:'smooth',block:'start'});},[checking]);
  const filtered=events.filter(e=>(asset==='All'||e.assets?.includes(asset))&&(!query||`${e.title} ${e.summary}`.toLowerCase().includes(query.toLowerCase())));
  const chosen=event.id?event:filtered[0];
+ const lens=chosen?eventLens(chosen,lang):null;
+ function focusAsset(s){setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);setStarted(true);navigate('Radar');}
  function choose(e){setEvent(e);setChecking(false);setStarted(true);navigate('Event');}
  function begin(){if(chosen){setEvent(chosen);setStarted(true);navigate('Event');}}
  function inspect(intent){if(!chosen)return;setEvent(chosen);setThesis(t(`我正在考虑${intent} ${chosen.assets?.join(' / ')||'相关币股'}，请结合这条事件检查支持证据、反方证据和需要核实的风险。`,`I am considering ${intent} ${chosen.assets?.join(' / ')||'related tokens'}. Check supporting evidence, counterarguments and missing information for this event.`));setChecking(true);setStarted(true);navigate('Event');}
  const assetPicker=<div className="asset-picker" aria-label={t('关注的资产','Followed assets')}>{['All','NVDA','TSLA','AAPL','AMD'].map(s=>
-<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s==='All'?t('全部','All'):s}</button>)}</div>;
+<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s==='All'?t('全部','All'):s}</button>)}<select aria-label={t('全部币股','All stock tokens')} value={asset} onChange={e=>focusAsset(e.target.value)}><option value="All">{t('全部币股','All stock tokens')}</option>{Array.from(new Set(['NVDA','TSLA','AAPL','AMD',...catalog.map(a=>a.symbol)])).sort().map(s=><option key={s} value={s}>{s}</option>)}</select></div>;
  const list=<section className="event-list">
 <div className="list-heading">
 <h2>{t('值得关注的事件','Events to explore')}</h2>
@@ -45,12 +51,12 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 </section>
 <section>
 <h3>{t('可能怎样传导','How it may matter')}</h3>
-<p>{chosen.mechanism||t('资产关联来自关键词映射。需要核实事件范围和业务影响，尚不能确认价格变化由该事件引起。','Asset relevance is keyword-based. Verify scope and business impact before attributing a price move to this event.')}</p>
+<p>{(chosen.kind==='source'?lens.path:chosen.mechanism)||t('资产关联来自关键词映射。需要核实事件范围和业务影响，尚不能确认价格变化由该事件引起。','Asset relevance is keyword-based. Verify scope and business impact before attributing a price move to this event.')}</p>
 <small>{t('传导假设，非已确认结论','Hypothesis, not an established conclusion')}</small>
 </section>
 <section>
 <h3>{t('还不能确定什么','What remains uncertain')}</h3>
-<p>{chosen.counter||t('市场是否已经反映消息、消息的实际影响，以及后续是否出现相反证据。','Whether the market has priced this in, its actual impact, and whether contrary evidence emerges.')}</p>
+<p>{(chosen.kind==='source'?lens.counter:chosen.counter)||t('市场是否已经反映消息、消息的实际影响，以及后续是否出现相反证据。','Whether the market has priced this in, its actual impact, and whether contrary evidence emerges.')}</p>
 </section>
 <details>
 <summary>{t('查看完整来源与核实清单','Full source and verification checklist')}</summary>
@@ -61,7 +67,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <header className="experience-header">
 <button className="wordmark" onClick={()=>{navigate('Radar');setStarted(false);}}>AfterBell<span>RESEARCH DESK</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
 <button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('发现','Discover')}</button>
 <button aria-current={page==='Journal'?'page':undefined} onClick={()=>navigate('Journal')}>{t('我的研究','My research')} <small>{records.length}</small>
 </button>
@@ -77,7 +83,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button onClick={()=>navigate('Sources')}>{t('设置','Settings')}</button>
 </div>
 </header>
-<main className="experience-main">{page==='Sources'?<>
+<main className="experience-main">{page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
 <h1>{t('模型与数据设置','Models & data')}</h1>{settings}</>:page==='Journal'?<>
 <h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1>{journal}</>:<>
 <div className="experience-title">
@@ -115,7 +121,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button key={v} onClick={()=>inspect(v)}>{label}</button>)}</div>
 <button className="primary" onClick={()=>inspect(t('观望','waiting'))}>{t('开始检查想法','Check my thesis')}</button>
 <p className="small">{t('基础检查无需 API Key。AI 深入分析可使用你自己的模型。','Basic checks need no key. Bring your model for deeper AI analysis.')}</p>
-</section>}</div>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
+</section>}</div>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
 <footer className="experience-footer">
 <span>AFTERBELL · RESEARCH BEFORE ACTION</span>
 <span>{t('研究辅助 · 由你做决定','Research support · Your decision')}</span>

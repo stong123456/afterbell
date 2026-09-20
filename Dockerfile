@@ -4,6 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
+COPY bitget.mjs ./bitget.mjs
 RUN npx vite build
 
 FROM node:22-alpine
@@ -12,6 +13,7 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs bitget.mjs ./
 COPY src/research.mjs ./src/research.mjs
+COPY src/decision.mjs ./src/decision.mjs
 COPY src/providers.mjs ./src/providers.mjs
 USER node
 EXPOSE 8080
