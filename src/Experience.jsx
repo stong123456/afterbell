@@ -1,3 +1,4 @@
+import {EventDetective,Capsules} from './EventDetective.jsx';
 import {MarketExplorer} from './MarketExplorer.jsx';
 import {DecisionPlan} from './DecisionPlan.jsx';
 import {eventLens} from './decision.mjs';
@@ -7,7 +8,7 @@ import {localizeTree} from './i18n.mjs';
 
 const shortTitle=e=>e.title?.match(/^【([^】]+)】/)?.[1]||e.title;
 const styles=['briefing','studio','workspace'];
-export function Experience({lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report}){
+export function Experience({lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report,setComparisonPeers}){
  const t=(zh,en)=>lang==='en'?en:zh;
  const [style,setStyle]=useState(()=>{try{const v=localStorage.getItem('afterbell.style');return styles.includes(v)?v:'workspace';}catch{return 'workspace';}});
  const [catalog,setCatalog]=useState([]);
@@ -67,7 +68,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <header className="experience-header">
 <button className="wordmark" onClick={()=>{navigate('Radar');setStarted(false);}}>AfterBell<span>RESEARCH DESK</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Capsules'?'page':undefined} onClick={()=>navigate('Capsules')}>{t('时间胶囊','Time capsules')}</button><button aria-current={page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
 <button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('发现','Discover')}</button>
 <button aria-current={page==='Journal'?'page':undefined} onClick={()=>navigate('Journal')}>{t('我的研究','My research')} <small>{records.length}</small>
 </button>
@@ -83,7 +84,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button onClick={()=>navigate('Sources')}>{t('设置','Settings')}</button>
 </div>
 </header>
-<main className="experience-main">{page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
+<main className="experience-main">{page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
 <h1>{t('模型与数据设置','Models & data')}</h1>{settings}</>:page==='Journal'?<>
 <h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1>{journal}</>:<>
 <div className="experience-title">
@@ -121,7 +122,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button key={v} onClick={()=>inspect(v)}>{label}</button>)}</div>
 <button className="primary" onClick={()=>inspect(t('观望','waiting'))}>{t('开始检查想法','Check my thesis')}</button>
 <p className="small">{t('基础检查无需 API Key。AI 深入分析可使用你自己的模型。','Basic checks need no key. Bring your model for deeper AI analysis.')}</p>
-</section>}</div>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
+</section>}</div>}{chosen&&<EventDetective key={'detective-'+chosen.id} event={chosen} lang={lang} report={report} onChallenge={(text,peers)=>{setComparisonPeers(peers);setEvent(chosen);setThesis(text);setChecking(true);navigate('Event');}}/>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
 <footer className="experience-footer">
 <span>AFTERBELL · RESEARCH BEFORE ACTION</span>
 <span>{t('研究辅助 · 由你做决定','Research support · Your decision')}</span>

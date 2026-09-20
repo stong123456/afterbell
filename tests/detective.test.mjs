@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {eventWindows,freezeCapsule,readCapsules} from '../src/detective.mjs';
+const H=3600000;
+const candles=Array.from({length:40},(_,i)=>({time:i*H,close:100+i,volume:10}));
+test('event windows use completed candles with no lookahead and consistent targets',()=>{const r=eventWindows({candles},new Date(10.5*H).toISOString(),20*H);assert.equal(r.baseline,109);assert.equal(r.baselineAt,10*H);assert.equal(r.changes[1].price,110);assert.equal(r.changes[24],null);assert.equal(r.volumeRatio,1);});
+test('missing or future event baselines are not filled from latest price',()=>{assert.equal(eventWindows({price:200,candles:[]},new Date(10*H).toISOString(),20*H),null);assert.equal(eventWindows({candles},new Date(30*H).toISOString(),20*H),null);const r=eventWindows({candles:candles.filter(c=>c.time!==13*H)},new Date(10.5*H).toISOString(),20*H);assert.equal(r.changes[4],null);assert.equal(r.volumeRatio,null);});
+test('capsules copy bounded original evidence and never retain keys or candles',()=>{const market={symbol:'NVDA',price:100,source:'https://api.bitget.com',candles,apiKey:'secret'};const c=freezeCapsule({event:{id:'e',title:'Event'},markets:[market],thesis:'A testable thesis with invalidation.',hours:24},20*H);market.price=200;assert.equal(c.markets[0].price,100);assert.equal(c.reviewAt,new Date(44*H).toISOString());assert.ok(!JSON.stringify(c).includes('secret'));assert.ok(!JSON.stringify(c).includes('candles'));assert.equal(readCapsules({getItem:()=>JSON.stringify([c,{version:1}])}).length,1);assert.throws(()=>freezeCapsule({event:{},markets:[],thesis:'short',hours:24}));});

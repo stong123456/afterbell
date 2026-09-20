@@ -1,3 +1,4 @@
+import {eventWindows} from './src/detective.mjs';
 
 const validSymbol=s=>typeof s==='string'&&/^[A-Z0-9.]{1,16}$/.test(s);
 const base='https://api.bitget.com';const cache=new Map(),pending=new Map();
@@ -45,3 +46,10 @@ export function normalizeCatalog(infos,tickers=[]){
  return infos.filter(i=>/^r[A-Z0-9.]{1,16}$/.test(i.baseCoin)&&i.quoteCoin==='USDT'&&i.symbol===i.baseCoin.toUpperCase()+'USDT').map(i=>{const q=quotes.get(i.symbol);return {symbol:i.baseCoin.slice(1),pair:i.symbol,baseCoin:i.baseCoin,status:i.status,price:positive(q?.lastPr),change24hPct:n(q?.change24h)===null?null:n(q.change24h)*100,volume24hUSDT:n(q?.usdtVolume),quoteTimestamp:n(q?.ts)};}).sort((a,b)=>(b.volume24hUSDT??-1)-(a.volume24hUSDT??-1));
 }
 export async function bitgetCatalog(){try{const infos=await load('/api/v2/spot/public/symbols',300000);let ticks=[];try{ticks=await load('/api/v2/spot/market/tickers',30000,12000);}catch{}return {status:ticks.length?'ok':'partial',assets:normalizeCatalog(infos,ticks),retrievedAt:new Date().toISOString(),source:base+'/api/v2/spot/public/symbols'};}catch(e){return {status:'unavailable',assets:[],reason:e.message,retrievedAt:new Date().toISOString()};}}
+
+export async function comparisonEvidence(event,peers){
+ if(!Array.isArray(peers))return [];
+ const assets=[...new Set(peers.filter(validSymbol))].slice(0,4);
+ const markets=await Promise.all(assets.map(bitgetMarket));
+ return markets.filter(m=>m.pair).map((m,i)=>({id:`M${i+1}`,kind:'market-snapshot',title:`${m.symbol} aligned event windows`,summary:JSON.stringify({symbol:m.symbol,windows:eventWindows(m,event.publishedAt),price:m.price,spreadPct:m.spreadPct,quoteTimestamp:m.quoteTimestamp,retrievedAt:m.retrievedAt}),url:m.source,publishedAt:null,scope:'server-retrieved; completed-hour-candles; not-causal-evidence'}));
+}

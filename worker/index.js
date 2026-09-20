@@ -1,4 +1,4 @@
-import {bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
+import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
 import {stoneNews,stoneMarket} from '../stone-adapter.mjs';
 import {researchContext,contextEvidence} from '../context.mjs';
 import {challenge,scenarios} from '../src/research.mjs';
@@ -43,7 +43,7 @@ export async function handle(request,env){
   const evidence=[{id:'E1',kind:event.kind,title:event.title,summary:event.summary,url:event.source,publishedAt:event.publishedAt,scope:'headline-and-summary-only'}];
   const market=await stoneMarket();const quotes=market.assets?.filter(q=>event.assets.includes(q.symbol)&&q.price!==null)||[];
   if(quotes.length)evidence.push({id:'E2',kind:'market-snapshot',title:event.assets.join(' / ')+' rToken snapshot',summary:JSON.stringify(quotes.map(q=>({symbol:q.symbol,price:q.price,currency:q.quoteCurrency,snapshotAt:q.snapshotAt,tradeTimestamp:'unknown',stale:!Number.isFinite(Date.parse(q.snapshotAt))||Date.now()-Date.parse(q.snapshotAt)>300000}))),url:market.source,publishedAt:market.updatedAt,scope:'aggregated-quote-not-equity-close'});
-  evidence.push(...await bitgetEvidence(event.assets)); if(!evidence.some(e=>e.id.startsWith('BG')))evidence.push(...browserMarketEvidence(input.browserMarket,event.assets));
+  evidence.push(...await bitgetEvidence(event.assets)); evidence.push(...await comparisonEvidence(event,input.peerSymbols)); if(!evidence.some(e=>e.id.startsWith('BG')))evidence.push(...browserMarketEvidence(input.browserMarket,event.assets));
   // Background is optional; this request does not delay an analysis for new CPI retrieval.
   try{const context=await caches.default.match(new Request(url.origin+'/__afterbell_context'));if(context)evidence.push(...contextEvidence(await context.json()));}catch{/* Optional cache cannot block research. */}
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(evidence)));
