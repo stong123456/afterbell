@@ -1,3 +1,4 @@
+import {StockLogo} from './StockLogo.jsx';
 import React,{useEffect,useState} from 'react';
 import {eventMove} from './market-math.mjs';
 import {bitgetMarket} from '../bitget.mjs';
@@ -10,7 +11,7 @@ export function BitgetPanel({event,lang,report,onSnapshot}){
  const x=ts=>30+(ts-minTime)/(maxTime-minTime||1)*640,y=p=>155-(p-lo)/(hi-lo||1)*125;
  const marker=Date.parse(event.publishedAt);let saved;try{saved=report?.evidence?.filter(e=>e.id.startsWith('BG')).map(e=>JSON.parse(e.summary)).find(e=>e.symbol===symbol);}catch{}
  return <section className="panel detail bitget-panel"><div className="section-head"><h2>Bitget · {t('币股行情','Tokenized stocks')}</h2><button disabled={busy} onClick={()=>setRefresh(n=>n+1)}>{t('刷新行情','Refresh quotes')}</button></div>
- <div className="filters">{(event.assets?.length?event.assets:['NVDA','AAPL','TSLA','TSM','AMD','XOM']).map(s=><button key={s} className={s===symbol?'selected':''} onClick={()=>setSymbol(s)}>{s}</button>)}</div>
+ <div className="filters">{(event.assets?.length?event.assets:['NVDA','AAPL','TSLA','TSM','AMD','XOM']).map(s=><button key={s} className={s===symbol?'selected':''} onClick={()=>setSymbol(s)}><StockLogo symbol={s}/>{s}</button>)}</div>
  {busy?<p role="status">{t('正在获取 Bitget 官方数据…','Loading Bitget public data…')}</p>:!data?.pair?<p role="status">{t('暂无可验证的官方币股数据。','Verified tokenized stock data unavailable.')}</p>:<>
  <p>{data.pair} · {data.tradingStatus} · {t('数据抓取','Retrieved')} {data.retrievedAt}</p>
  {data.browserFetched&&<p>{t('由你的浏览器直接读取 Bitget 官方公开接口。报告会标明此来源未由服务端独立复核。','Fetched directly from Bitget public APIs by your browser. Reports label this source as not independently verified by the server.')}</p>}

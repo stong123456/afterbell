@@ -1,3 +1,4 @@
+import {StockLogo} from './StockLogo.jsx';
 import {EventDetective,Capsules} from './EventDetective.jsx';
 import {MarketExplorer} from './MarketExplorer.jsx';
 import {DecisionPlan} from './DecisionPlan.jsx';
@@ -26,7 +27,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
  function begin(){if(chosen){setEvent(chosen);setStarted(true);navigate('Event');}}
  function inspect(intent){if(!chosen)return;setEvent(chosen);setThesis(t(`我正在考虑${intent} ${chosen.assets?.join(' / ')||'相关币股'}，请结合这条事件检查支持证据、反方证据和需要核实的风险。`,`I am considering ${intent} ${chosen.assets?.join(' / ')||'related tokens'}. Check supporting evidence, counterarguments and missing information for this event.`));setChecking(true);setStarted(true);navigate('Event');}
  const assetPicker=<div className="asset-picker" aria-label={t('关注的资产','Followed assets')}>{['All','NVDA','TSLA','AAPL','AMD'].map(s=>
-<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s==='All'?t('全部','All'):s}</button>)}<select aria-label={t('全部币股','All stock tokens')} value={asset} onChange={e=>focusAsset(e.target.value)}><option value="All">{t('全部币股','All stock tokens')}</option>{Array.from(new Set(['NVDA','TSLA','AAPL','AMD',...catalog.map(a=>a.symbol)])).sort().map(s=><option key={s} value={s}>{s}</option>)}</select></div>;
+<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s!=='All'&&<StockLogo symbol={s}/>}<span>{s==='All'?t('全部','All'):s}</span></button>)}<select aria-label={t('全部币股','All stock tokens')} value={asset} onChange={e=>focusAsset(e.target.value)}><option value="All">{t('全部币股','All stock tokens')}</option>{Array.from(new Set(['NVDA','TSLA','AAPL','AMD',...catalog.map(a=>a.symbol)])).sort().map(s=><option key={s} value={s}>{s}</option>)}</select></div>;
  const list=<section className="event-list">
 <div className="list-heading">
 <h2>{t('值得关注的事件','Events to explore')}</h2>

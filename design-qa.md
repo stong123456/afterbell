@@ -38,3 +38,10 @@ Copy: entry, evidence, uncertainty and next action clearly labeled. No invented 
 Actual BYOK provider invocation not tested without a user key. Chart and deeper reasoning backend semantics were preserved, not comprehensively revalidated. The production adaptation is not a pixel-identical reproduction of each generated screen. Further visual refinements may tune editorial density and optional brand imagery.
 
 final result: passed
+
+## Logo and market polish — 2026-09-21
+- Compared the original production market screenshot with the updated local workspace rendering. Improved table header contrast, numeric alignment, product identity and action hierarchy.
+- Viewed studio and briefing renderings. Stock logos loaded in the current first-page sample and NVDA search; unverified coverage for the entire catalog. Missing images hide while ticker text remains.
+- Verified NVDA search, English switch, and Related events navigation preserving the chosen asset.
+- Prior build succeeded. No new business logic tests added for this scoped visual change. Mobile CSS retains horizontal table scrolling; a new mobile screenshot was not captured in this pass.
+- Images use FMP underlying-ticker URLs with lazy loading, no-referrer, and error handling. Third-party availability and symbol mapping are coverage limits.
