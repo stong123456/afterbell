@@ -1,3 +1,4 @@
+import {ThesisDesk} from './ThesisDesk.jsx';
 import {StockLogo} from './StockLogo.jsx';
 import {EventDetective,Capsules} from './EventDetective.jsx';
 import {MarketExplorer} from './MarketExplorer.jsx';
@@ -67,10 +68,10 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 </article>;
  return <div className={`experience theme-${style}`}>
 <header className="experience-header">
-<button className="wordmark" onClick={()=>{navigate('Radar');setStarted(false);}}>AfterBell<span>RESEARCH DESK</span>
+<button className="wordmark" onClick={()=>{navigate('Thesis');setStarted(false);}}>AskStone<span>THESIS OS</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Capsules'?'page':undefined} onClick={()=>navigate('Capsules')}>{t('时间胶囊','Time capsules')}</button><button aria-current={page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
-<button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('发现','Discover')}</button>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Thesis'?'page':undefined} onClick={()=>navigate('Thesis')}>{t('我的逻辑','My theses')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
+<button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('证据','Evidence')}</button>
 <button aria-current={page==='Journal'?'page':undefined} onClick={()=>navigate('Journal')}>{t('我的研究','My research')} <small>{records.length}</small>
 </button>
 </nav>
@@ -85,11 +86,11 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button onClick={()=>navigate('Sources')}>{t('设置','Settings')}</button>
 </div>
 </header>
-<main className="experience-main">{page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
+<main className="experience-main">{page==='Thesis'?<ThesisDesk lang={lang} events={events} loading={loading} refresh={refresh} onLibrary={()=>navigate('Journal')} onChallenge={(saved,e)=>{setEvent(e);setThesis((saved.idea+'\n'+saved.assumptions.map(a=>a.text+' ['+a.status+']').join('\n')+'\n'+t('请站在反方，逐条核对支持、反对证据与缺失信息。','Challenge each assumption with supporting, opposing and missing evidence.')).slice(0,2000));setChecking(true);setStarted(true);navigate('Event');}}/>:page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
 <h1>{t('模型与数据设置','Models & data')}</h1>{settings}</>:page==='Journal'?<>
-<h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1>{journal}</>:<>
+<h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1><button onClick={()=>navigate('Capsules')}>{t('查看时间胶囊','Open time capsules')}</button>{journal}</>:<>
 <div className="experience-title">
-<small>BITGET TOKENIZED STOCKS · AFTERBELL</small>
+<small>ASKSTONE · EVIDENCE DESK</small>
 <h1>{style==='studio'?t('今天，你想看懂哪只币股？','Which tokenized stock is on your mind?'):style==='briefing'?t('先看懂事件，再做交易。','Understand the event. Then decide.'):t('把市场消息，变成看得懂的判断。','Turn market news into clearer decisions.')}</h1>
 <p>{t('选择币股，了解事件与价格反应，再检查你的交易想法。','Choose an asset, explore events and price reactions, then challenge your thesis.')}</p>
 </div>{assetPicker}{style==='studio'&&!started&&!event.id?<section className="studio-start">
@@ -125,7 +126,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <p className="small">{t('基础检查无需 API Key。AI 深入分析可使用你自己的模型。','Basic checks need no key. Bring your model for deeper AI analysis.')}</p>
 </section>}</div>}{chosen&&<EventDetective key={'detective-'+chosen.id} event={chosen} lang={lang} report={report} onChallenge={(text,peers)=>{setComparisonPeers(peers);setEvent(chosen);setThesis(text);setChecking(true);navigate('Event');}}/>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
 <footer className="experience-footer">
-<span>AFTERBELL · RESEARCH BEFORE ACTION</span>
+<span>ASKSTONE · REMEMBER WHY</span>
 <span>{t('研究辅助 · 由你做决定','Research support · Your decision')}</span>
 <button onClick={refresh} disabled={loading}>{loading?t('刷新中…','Refreshing…'):t('刷新来源','Refresh sources')}</button>
 </footer>
