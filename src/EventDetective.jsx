@@ -6,7 +6,7 @@ import {eventLens} from './decision.mjs';
 async function quote(symbol){try{const r=await fetch('/api/bitget?symbol='+encodeURIComponent(symbol),{signal:AbortSignal.timeout(15000)});const d=r.ok?await r.json():null;if(d?.status==='ok')return d;}catch{}return {...await bitgetMarket(symbol),browserFetched:true};}
 const fmt=n=>Number.isFinite(n)?`${n>0?'+':''}${n.toFixed(2)}%`:'—';
 export function EventDetective({event,lang,onChallenge,report}){
- const t=(zh,en)=>lang==='en'?en:zh,[peers,setPeers]=useState(()=>peerSet(event.assets?.[0])),[extra,setExtra]=useState(''),[markets,setMarkets]=useState([]),[busy,setBusy]=useState(false),[reload,setReload]=useState(0),[thesis,setThesis]=useState(''),[hours,setHours]=useState(24),[status,setStatus]=useState('');
+ const t=(zh,en)=>lang==='en'?en:zh,[peers,setPeers]=useState(()=>event.assets?.length?peerSet(event.assets[0]):[]),[extra,setExtra]=useState(''),[markets,setMarkets]=useState([]),[busy,setBusy]=useState(false),[reload,setReload]=useState(0),[thesis,setThesis]=useState(''),[hours,setHours]=useState(24),[status,setStatus]=useState('');
  useEffect(()=>{let alive=true;setMarkets([]);setBusy(true);Promise.all(peers.map(quote)).then(m=>{if(alive)setMarkets(m);}).finally(()=>{if(alive)setBusy(false);});return()=>{alive=false;};},[peers,reload]);
  const lens=eventLens(event,lang),rows=peers.map(s=>({symbol:s,market:markets.find(m=>m.symbol===s)})).map(r=>({...r,windows:eventWindows(r.market,event.publishedAt)}));
  const valid=rows.filter(r=>r.windows?.changes[4]),spread=valid.length>1?Math.max(...valid.map(r=>r.windows.changes[4].pct))-Math.min(...valid.map(r=>r.windows.changes[4].pct)):null;

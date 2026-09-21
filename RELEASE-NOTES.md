@@ -20,3 +20,11 @@ Remaining product limits: news asset tagging still has limited company-name cove
 - Local frozen thesis, event, quotes, windows and existing report; separate current-quote review and manual notes; JSON export. No trusted timestamp, auto-reminder, cloud sync or trading-performance claim.
 - 29 tests passed and production build passed. A live NVDA/AMD/TSM comparison returned completed-hour windows; missing TSM baseline history/volume remained null. This was an arithmetic probe with a selected timestamp, not a claim that a real news event occurred then.
 - No actual user-key model call or browser UI regression was performed in this release.
+
+## Evidence homepage and publisher feeds — 2026-09-21
+- Default route and wordmark now open Evidence; My theses remains a primary navigation item.
+- Added direct CNBC, Federal Reserve, SEC, CoinDesk, Decrypt and TechCrunch feeds alongside StoneDaily.
+- Source picker and health details expose fetch availability, timestamp and pre-dedup record counts. Canonical original URLs deduplicate cross-feed articles; only dated records from the last 30 days are retained (max 240).
+- Expanded keyword asset mapping; macro stories with no mapped assets no longer default to NVDA comparisons.
+- Live local check: all 7 ingestion paths returned successfully, 142 deduplicated records at browser QA time. Counts change over time and are not unique independent confirmations.
+- Build and 38 tests passed. Browser confirmed default homepage, SEC filtering, article selection and source coverage. Publisher summaries remain in original language.

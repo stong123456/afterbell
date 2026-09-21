@@ -10,17 +10,18 @@ import {localizeTree} from './i18n.mjs';
 
 const shortTitle=e=>e.title?.match(/^【([^】]+)】/)?.[1]||e.title;
 const styles=['briefing','studio','workspace'];
-export function Experience({lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report,setComparisonPeers}){
+export function Experience({newsInfo,lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report,setComparisonPeers}){
  const t=(zh,en)=>lang==='en'?en:zh;
  const [style,setStyle]=useState(()=>{try{const v=localStorage.getItem('afterbell.style');return styles.includes(v)?v:'workspace';}catch{return 'workspace';}});
  const [catalog,setCatalog]=useState([]);
+ const [sourceFilter,setSourceFilter]=useState('All');
  const [limit,setLimit]=useState(12);
  const [asset,setAsset]=useState('All'),[query,setQuery]=useState(''),[started,setStarted]=useState(false),[checking,setChecking]=useState(false);
  const checkRef=useRef(null);
  useEffect(()=>{try{localStorage.setItem('afterbell.style',style);}catch{}},[style]);
  useEffect(()=>{if(report)setChecking(true);},[report]);
  useEffect(()=>{if(checking)checkRef.current?.scrollIntoView({behavior:'smooth',block:'start'});},[checking]);
- const filtered=events.filter(e=>(asset==='All'||e.assets?.includes(asset))&&(!query||`${e.title} ${e.summary}`.toLowerCase().includes(query.toLowerCase())));
+ const filtered=events.filter(e=>(sourceFilter==='All'||e.sourceName===sourceFilter)&&(asset==='All'||e.assets?.includes(asset))&&(!query||`${e.title} ${e.summary}`.toLowerCase().includes(query.toLowerCase())));
  const chosen=event.id?event:filtered[0];
  const lens=chosen?eventLens(chosen,lang):null;
  function focusAsset(s){setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);setStarted(true);navigate('Radar');}
@@ -28,13 +29,13 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
  function begin(){if(chosen){setEvent(chosen);setStarted(true);navigate('Event');}}
  function inspect(intent){if(!chosen)return;setEvent(chosen);setThesis(t(`我正在考虑${intent} ${chosen.assets?.join(' / ')||'相关币股'}，请结合这条事件检查支持证据、反方证据和需要核实的风险。`,`I am considering ${intent} ${chosen.assets?.join(' / ')||'related tokens'}. Check supporting evidence, counterarguments and missing information for this event.`));setChecking(true);setStarted(true);navigate('Event');}
  const assetPicker=<div className="asset-picker" aria-label={t('关注的资产','Followed assets')}>{['All','NVDA','TSLA','AAPL','AMD'].map(s=>
-<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s!=='All'&&<StockLogo symbol={s}/>}<span>{s==='All'?t('全部','All'):s}</span></button>)}<select aria-label={t('全部币股','All stock tokens')} value={asset} onChange={e=>focusAsset(e.target.value)}><option value="All">{t('全部币股','All stock tokens')}</option>{Array.from(new Set(['NVDA','TSLA','AAPL','AMD',...catalog.map(a=>a.symbol)])).sort().map(s=><option key={s} value={s}>{s}</option>)}</select></div>;
+<button key={s} aria-pressed={asset===s} onClick={()=>{setAsset(s);setEvent({id:'',title:'',assets:[],checks:[]});setChecking(false);}}>{s!=='All'&&<StockLogo symbol={s}/>}<span>{s==='All'?t('全部','All'):s}</span></button>)}<select aria-label={t('全部币股','All stock tokens')} value={asset} onChange={e=>focusAsset(e.target.value)}><option value="All">{t('全部币股','All stock tokens')}</option>{Array.from(new Set(['NVDA','TSLA','AAPL','AMD',...events.flatMap(e=>e.assets||[]),...catalog.map(a=>a.symbol)])).sort().map(s=><option key={s} value={s}>{s}</option>)}</select></div>;
  const list=<section className="event-list">
 <div className="list-heading">
 <h2>{t('值得关注的事件','Events to explore')}</h2>
 <span>{filtered.length}</span>
 </div>
-<input aria-label={t('搜索事件','Search events')} placeholder={t('搜索事件或关键词','Search events or keywords')} value={query} onChange={e=>setQuery(e.target.value)}/>{filtered.slice(0,limit).map(e=>
+<input aria-label={t('搜索事件','Search events')} placeholder={t('搜索事件或关键词','Search events or keywords')} value={query} onChange={e=>{setQuery(e.target.value);setEvent({id:'',title:'',assets:[],checks:[]});setLimit(12);}}/>{filtered.slice(0,limit).map(e=>
 <button className="story-link" key={e.id} aria-pressed={chosen?.id===e.id} onClick={()=>choose(e)}>
 <small>{e.assets?.join(' · ')||t('宏观事件','Macro')}</small>
 <strong>{shortTitle(e)}</strong>
@@ -68,10 +69,10 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 </article>;
  return <div className={`experience theme-${style}`}>
 <header className="experience-header">
-<button className="wordmark" onClick={()=>{navigate('Thesis');setStarted(false);}}>AskStone<span>THESIS OS</span>
+<button className="wordmark" onClick={()=>{navigate('Radar');setStarted(true);}}>AskStone<span>THESIS OS</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Thesis'?'page':undefined} onClick={()=>navigate('Thesis')}>{t('我的逻辑','My theses')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
-<button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('证据','Evidence')}</button>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('首页 · 证据','Home · Evidence')}</button><button aria-current={page==='Thesis'?'page':undefined} onClick={()=>navigate('Thesis')}>{t('我的逻辑','My theses')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
+
 <button aria-current={page==='Journal'?'page':undefined} onClick={()=>navigate('Journal')}>{t('我的研究','My research')} <small>{records.length}</small>
 </button>
 </nav>
@@ -90,31 +91,10 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <h1>{t('模型与数据设置','Models & data')}</h1>{settings}</>:page==='Journal'?<>
 <h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1><button onClick={()=>navigate('Capsules')}>{t('查看时间胶囊','Open time capsules')}</button>{journal}</>:<>
 <div className="experience-title">
-<small>ASKSTONE · EVIDENCE DESK</small>
-<h1>{style==='studio'?t('今天，你想看懂哪只币股？','Which tokenized stock is on your mind?'):style==='briefing'?t('先看懂事件，再做交易。','Understand the event. Then decide.'):t('把市场消息，变成看得懂的判断。','Turn market news into clearer decisions.')}</h1>
+<small>ASKSTONE · EVIDENCE FIRST</small>
+<h1>{t('先看证据，再检查你的判断。','Start with evidence. Revisit your thesis.')}</h1>
 <p>{t('选择币股，了解事件与价格反应，再检查你的交易想法。','Choose an asset, explore events and price reactions, then challenge your thesis.')}</p>
-</div>{assetPicker}{style==='studio'&&!started&&!event.id?<section className="studio-start">
-<div>
-<small>01 / {t('选择研究对象','CHOOSE YOUR FOCUS')}</small>
-<h2>{t('从你关注的资产开始。','Start with what you follow.')}</h2>
-<p>{t('先看基础证据，无需配置 API Key。','Explore the evidence first. No API key required.')}</p>
-<button className="primary" disabled={!chosen} onClick={begin}>{loading&&!chosen?t('正在获取事件…','Loading events…'):t('开始研究','Start research')}</button>{!loading&&!chosen&&<p>{t('暂无关联事件，请选择其他资产。','No related events. Try another asset.')}</p>}
-</div>
-<ol>
-<li>
-<b>{t('了解发生了什么','Understand what happened')}</b>
-<p>{t('直接追溯新闻来源','Trace the original source')}</p>
-</li>
-<li>
-<b>{t('观察价格反应','Observe the market')}</b>
-<p>{t('结合 Bitget 币股行情','Explore Bitget token quotes')}</p>
-</li>
-<li>
-<b>{t('找到证据缺口','Find the evidence gaps')}</b>
-<p>{t('检查支持与反对的理由','Examine both sides of your thesis')}</p>
-</li>
-</ol>
-</section>:<div className="research-layout">{list}<div className="reading-column">{localizeTree(story,lang)}{chosen&&<details className="market-disclosure">
+</div><div className="evidence-toolbar"><label>{t('新闻来源','News source')}<select value={sourceFilter} onChange={e=>{setSourceFilter(e.target.value);setEvent({id:'',title:'',assets:[],checks:[]});setLimit(12);}}><option value="All">{t('全部来源','All sources')}</option>{[...new Set(events.map(e=>e.sourceName).filter(Boolean))].sort().map(n=><option key={n} value={n}>{n}</option>)}</select></label><span>{events.length} {t('条去重记录','unique records')} · {t('近 30 天，按发布时间排序','Last 30 days, newest first')}</span><button disabled={loading} onClick={refresh}>{loading?t('更新中…','Updating…'):t('更新新闻','Refresh news')}</button></div><details className="source-health"><summary>{t('查看来源覆盖与抓取状态','Source coverage & fetch status')} · {newsInfo?.providers?.filter(p=>p.status==='ok').length??0}/{newsInfo?.providers?.length??0}</summary><div>{newsInfo?.providers?.map(p=><p key={p.name}><a href={p.url} target="_blank" rel="noreferrer">{p.name}</a> · {p.status==='ok'?t('已获取','Fetched'):t('暂不可用','Unavailable')} · {p.count??0} {t('条记录','records')}{p.checkedAt?' · '+new Date(p.checkedAt).toLocaleTimeString():''}</p>)}</div><p>{t('来源失败不会填入模拟新闻。资产关联为关键词线索；不同报道不等于独立确认。','Failed feeds are not replaced with mock news. Asset links are keyword leads; separate reports are not independent confirmation.')}</p></details>{assetPicker}<div className="research-layout">{list}<div className="reading-column">{localizeTree(story,lang)}{chosen?.assets?.length>0&&<details className="market-disclosure">
 <summary>{t('查看 Bitget 行情与事件前后变化','Bitget quotes & event-window price changes')}</summary>{marketPanel(chosen)}</details>}{chosen&&<details className="market-disclosure">
 <summary>{t('深入查看事件推理','Explore deeper event reasoning')}</summary>{reasoning(chosen)}</details>}</div>{chosen&&<section className="next-action">
 <small>{t('下一步','NEXT STEP')}</small>
@@ -124,7 +104,7 @@ export function Experience({lang,setLang,page,navigate,events,event,setEvent,loa
 <button key={v} onClick={()=>inspect(v)}>{label}</button>)}</div>
 <button className="primary" onClick={()=>inspect(t('观望','waiting'))}>{t('开始检查想法','Check my thesis')}</button>
 <p className="small">{t('基础检查无需 API Key。AI 深入分析可使用你自己的模型。','Basic checks need no key. Bring your model for deeper AI analysis.')}</p>
-</section>}</div>}{chosen&&<EventDetective key={'detective-'+chosen.id} event={chosen} lang={lang} report={report} onChallenge={(text,peers)=>{setComparisonPeers(peers);setEvent(chosen);setThesis(text);setChecking(true);navigate('Event');}}/>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
+</section>}</div>{chosen&&<EventDetective key={'detective-'+chosen.id} event={chosen} lang={lang} report={report} onChallenge={(text,peers)=>{setComparisonPeers(peers);setEvent(chosen);setThesis(text);setChecking(true);navigate('Event');}}/>}{chosen&&<DecisionPlan key={chosen.id} event={chosen} lang={lang} onUse={text=>{setEvent(chosen);setThesis(text.slice(0,2000));setChecking(true);navigate('Event');}}/>}{(checking||report)&&<div className="guided-challenge" ref={checkRef}>{challenge}</div>}</>}</main>
 <footer className="experience-footer">
 <span>ASKSTONE · REMEMBER WHY</span>
 <span>{t('研究辅助 · 由你做决定','Research support · Your decision')}</span>
