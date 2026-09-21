@@ -1,3 +1,4 @@
+import {QuickDesk} from './QuickDesk.jsx';
 import {ThesisDesk} from './ThesisDesk.jsx';
 import {StockLogo} from './StockLogo.jsx';
 import {EventDetective,Capsules} from './EventDetective.jsx';
@@ -10,7 +11,7 @@ import {localizeTree} from './i18n.mjs';
 
 const shortTitle=e=>e.title?.match(/^【([^】]+)】/)?.[1]||e.title;
 const styles=['briefing','studio','workspace'];
-export function Experience({newsInfo,lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report,setComparisonPeers}){
+export function Experience({userModel,config,newsInfo,lang,setLang,page,navigate,events,event,setEvent,loading,refresh,challenge,marketPanel,reasoning,settings,journal,records,setThesis,report,setComparisonPeers}){
  const t=(zh,en)=>lang==='en'?en:zh;
  const [style,setStyle]=useState(()=>{try{const v=localStorage.getItem('afterbell.style');return styles.includes(v)?v:'workspace';}catch{return 'workspace';}});
  const [catalog,setCatalog]=useState([]);
@@ -69,26 +70,22 @@ export function Experience({newsInfo,lang,setLang,page,navigate,events,event,set
 </article>;
  return <div className={`experience theme-${style}`}>
 <header className="experience-header">
-<button className="wordmark" onClick={()=>{navigate('Radar');setStarted(true);}}>AskStone<span>THESIS OS</span>
+<button className="wordmark" onClick={()=>{navigate('Home');setStarted(true);}}>AskStone<span>THESIS OS</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}><button aria-current={['Radar','Event'].includes(page)?'page':undefined} onClick={()=>navigate('Radar')}>{t('首页 · 证据','Home · Evidence')}</button><button aria-current={page==='Thesis'?'page':undefined} onClick={()=>navigate('Thesis')}>{t('我的逻辑','My theses')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('币股市场','Markets')}</button>
-
-<button aria-current={page==='Journal'?'page':undefined} onClick={()=>navigate('Journal')}>{t('我的研究','My research')} <small>{records.length}</small>
-</button>
-</nav>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Home'?'page':undefined} onClick={()=>navigate('Home')}>{t('问 Stone','Ask Stone')}</button><button aria-current={['Thesis','Journal','Capsules'].includes(page)?'page':undefined} onClick={()=>navigate('Thesis')}>{t('记忆','Memory')}</button></nav>
 <div className="preferences">
-<label>{t('风格','Style')}<select aria-label={t('界面风格','Interface style')} value={style} onChange={e=>setStyle(e.target.value)}>
-<option value="briefing">{t('01 简报','01 Briefing')}</option>
-<option value="studio">{t('02 引导','02 Studio')}</option>
-<option value="workspace">{t('03 工作台','03 Workspace')}</option>
-</select>
-</label>
+
 <button onClick={()=>setLang(lang==='zh'?'en':'zh')}>{lang==='zh'?'EN':'中文'}</button>
 <button onClick={()=>navigate('Sources')}>{t('设置','Settings')}</button>
 </div>
 </header>
-<main className="experience-main">{page==='Thesis'?<ThesisDesk lang={lang} events={events} loading={loading} refresh={refresh} onLibrary={()=>navigate('Journal')} onChallenge={(saved,e)=>{setEvent(e);setThesis((saved.idea+'\n'+saved.assumptions.map(a=>a.text+' ['+a.status+']').join('\n')+'\n'+t('请站在反方，逐条核对支持、反对证据与缺失信息。','Challenge each assumption with supporting, opposing and missing evidence.')).slice(0,2000));setChecking(true);setStarted(true);navigate('Event');}}/>:page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
-<h1>{t('模型与数据设置','Models & data')}</h1>{settings}</>:page==='Journal'?<>
+<main className="experience-main">{page==='Home'?<QuickDesk lang={lang} model={userModel} config={config} events={events} onSettings={()=>navigate('Sources')} onEvidence={()=>navigate('Radar')} onMemory={()=>navigate('Thesis')}/>:page==='Thesis'?<ThesisDesk onCreate={()=>navigate('Home')} lang={lang} events={events} loading={loading} refresh={refresh} onLibrary={()=>navigate('Journal')} onChallenge={(saved,e)=>{setEvent(e);setThesis((saved.idea+'\n'+saved.assumptions.map(a=>a.text+' ['+a.status+']').join('\n')+'\n'+t('请站在反方，逐条核对支持、反对证据与缺失信息。','Challenge each assumption with supporting, opposing and missing evidence.')).slice(0,2000));setChecking(true);setStarted(true);navigate('Event');}}/>:page==='Capsules'?<Capsules lang={lang}/>:page==='Market'?<MarketExplorer lang={lang} onCatalog={setCatalog} onFocus={focusAsset}/>:page==='Sources'?<>
+<h1>{t('模型与数据设置','Models & data')}</h1><label>{t('风格','Style')}<select aria-label={t('界面风格','Interface style')} value={style} onChange={e=>setStyle(e.target.value)}>
+<option value="briefing">{t('01 简报','01 Briefing')}</option>
+<option value="studio">{t('02 引导','02 Studio')}</option>
+<option value="workspace">{t('03 工作台','03 Workspace')}</option>
+</select>
+</label>{settings}<button onClick={()=>navigate('Radar')}>{t('证据与来源状态','Evidence & source status')}</button><button onClick={()=>navigate('Market')}>{t('币股行情','Token markets')}</button></>:page==='Journal'?<>
 <h1>{t('让每次判断，都可以回顾。','Make every decision reviewable.')}</h1><button onClick={()=>navigate('Capsules')}>{t('查看时间胶囊','Open time capsules')}</button>{journal}</>:<>
 <div className="experience-title">
 <small>ASKSTONE · EVIDENCE FIRST</small>

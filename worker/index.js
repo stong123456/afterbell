@@ -1,3 +1,4 @@
+import {stoneBrief,demoConfig,reserveDemo} from '../stone-brief.mjs';
 import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
 import {stoneNews,stoneMarket} from '../stone-adapter.mjs';
 import {researchContext,contextEvidence} from '../context.mjs';
@@ -25,7 +26,13 @@ async function body(request){
 export async function handle(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/bitget'&&request.method==='GET')return json(await bitgetMarket(url.searchParams.get('symbol')));
- if(url.pathname==='/api/health')return json({ok:true,product:'AfterBell',version:'0.3.0',ai:{provider:'byok',configured:false,model:'user-provided'}});
+ if(url.pathname==='/api/health')return json({ok:true,product:'AskStone',version:'0.4.0',ai:demoConfig(env)});
+ if(url.pathname==='/api/brief'&&request.method==='POST'){
+  if(request.headers.get('origin')!==url.origin)return json({error:'ORIGIN_NOT_ALLOWED'},403);
+  if(!request.headers.get('content-type')?.startsWith('application/json'))return json({error:'JSON_REQUIRED'},415);
+  if(active>=2)return json({error:'MODEL_BUSY'},429);
+  const input=await body(request);active++;try{return json(await stoneBrief(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip'))));}finally{active--;}
+ }
  if(url.pathname==='/api/news'&&request.method==='GET'){const news=await stoneNews();await remember(env,news.events||[]);return json(news);}
  if(url.pathname==='/api/bitget/catalog')return json(await bitgetCatalog());
   if(url.pathname==='/api/market'&&request.method==='GET')return json(await stoneMarket());
@@ -64,5 +71,5 @@ export default {async fetch(request,env,ctx){
   const response=await handle(request,env);
   if(new URL(request.url).pathname==='/api/context'&&response.ok){const cached=new Response(response.clone().body,{headers:{'content-type':'application/json','cache-control':'public,max-age=60'}});ctx.waitUntil(caches.default.put(new Request(new URL('/__afterbell_context',request.url)),cached));}
   const secured=new Response(response.body,response);secured.headers.set('x-content-type-options','nosniff');secured.headers.set('referrer-policy','strict-origin-when-cross-origin');secured.headers.set('x-frame-options','DENY');return secured;
- }catch(e){console.error('AFTERBELL_FAILURE',e.name,String(e.stack||'').split('\n').slice(1,3).join('\n'));return json({error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'},e.message==='REQUEST_TOO_LARGE'?413:/HTTP_|JSON_INVALID|EVIDENCE_INVALID/.test(e.message)?502:400);}
+ }catch(e){console.error('AFTERBELL_FAILURE',e.name,String(e.stack||'').split('\n').slice(1,3).join('\n'));return json({error:/^[A-Z_0-9]+$/.test(e.message)?e.message:'REQUEST_FAILED'},e.message==='DEMO_DAILY_LIMIT'?429:/AI_NOT_CONFIGURED|DEMO_LIMIT_UNAVAILABLE/.test(e.message)?503:e.message==='REQUEST_TOO_LARGE'?413:/HTTP_|JSON_INVALID|EVIDENCE_INVALID/.test(e.message)?502:400);}
 }};

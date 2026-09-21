@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
-COPY evidence-feeds.mjs server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs bitget.mjs ./
+COPY stone-brief.mjs evidence-feeds.mjs server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs bitget.mjs ./
 COPY src/research.mjs ./src/research.mjs
 COPY src/decision.mjs ./src/decision.mjs
 COPY src/detective.mjs ./src/detective.mjs
