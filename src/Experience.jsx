@@ -72,7 +72,7 @@ export function Experience({userModel,config,newsInfo,lang,setLang,page,navigate
 <header className="experience-header">
 <button className="wordmark" onClick={()=>{navigate('Home');setStarted(true);}}>AskStone<span>THESIS OS</span>
 </button>
-<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Home'?'page':undefined} onClick={()=>navigate('Home')}>{t('问 Stone','Ask Stone')}</button><button aria-current={['Thesis','Journal','Capsules'].includes(page)?'page':undefined} onClick={()=>navigate('Thesis')}>{t('记忆','Memory')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('行情','Markets')}</button></nav>
+<nav aria-label={t('主导航','Main navigation')}><button aria-current={page==='Home'?'page':undefined} onClick={()=>navigate('Home')}>{t('问 Stone','Ask Stone')}</button><button aria-current={page==='Market'?'page':undefined} onClick={()=>navigate('Market')}>{t('行情','Markets')}</button><button aria-current={['Thesis','Journal','Capsules'].includes(page)?'page':undefined} onClick={()=>navigate('Thesis')}>{t('记忆','Memory')}</button></nav>
 <div className="preferences">
 
 <button onClick={()=>setLang(lang==='zh'?'en':'zh')}>{lang==='zh'?'EN':'中文'}</button>
