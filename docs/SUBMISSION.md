@@ -1,26 +1,38 @@
-# 参赛材料草案
+# AskStone — Submission and demonstration
 
-官方依据：https://bitget-ai.gitbook.io/bitgetai_hackathons2/base-camp-hackathon-s2-cn
-截止：2026-09-21，UTC+8。官方页面未给精确小时，建议 9 月 20 日完成。选择 AI Trading Desk / 决策压力测试。可访问 Demo、完整任务演示和合规 X 帖是必要材料。官方页面不同章节的评审/投票日期存在差异，应临近提交再次确认。
+**AI Thesis OS for tokenized equities**
 
-## 表单六段草案
-1. 思路：美股休市时信息仍在传播，代币报价也可能变化。AfterBell 把事件来源、传导假设与交易观点反证放在同一研究流程，帮助用户发现判断的证据缺口。
-2. 用户与价值：持有科技股代币敞口、关注非交易时段事件的个人交易者；在开仓前核实信息、产品差异与反方论据。
-3. 验证：当前只有工程验证，尚无用户任务完成率和校准概率数据。计划 5 人任务测试；不要把目标填作实测。
-4. 完成度：React/Vite + Node 本地原型，StoneDaily 公开聚合信息源、规则压力测试和报告导出。尚缺运行时 LLM、真实收盘基准、历史样本、公开部署。
-5. 材料：可运行代码、产品说明、方法边界、测试、视觉概念；公开 Demo/视频链接待补。
-6. 对 AI Trading 的看法：AI 的价值在于把来源和反证组织成可核实的判断，执行权留给人类。
+[Live demo](https://askstone-eventedge.chunmingyang8.chatgpt.site/) · [Source](https://github.com/stong123456/afterbell) · [Automated checks](https://github.com/stong123456/afterbell/actions)
 
-大模型作用字段：Codex 用于原型开发。当前产品运行时采用规则逻辑，没有调用大模型；接入和实测后才更新此字段。
+## Project pitch
 
-## 90 秒演示脚本
-0–20 秒：Radar 选择一条 StoneDaily 来源记录，打开原文核实。
-20–40 秒：Event 查看潜在传导、反证、缺失历史样本。
-40–65 秒：输入“我准备买 NVDA rToken，因为我认为周末跌得太多，下次开盘会反弹”，展示压力测试。
-65–80 秒：Portfolio 输入 10000 USD、自设 -5% 冲击，得到 -500 USD 情景损益。
-80–90 秒：导出报告，说明不伪造概率、不自动交易。
+Most research tools explain what happened. AskStone remembers why you wanted a trade and checks whether later evidence changes those reasons.
 
-## X 帖草稿（未发布）
-我正在构建 AfterBell：美股休市后的事件研究台。复用 StoneDaily 信息源，把事件来源、rToken 报价与交易观点反证放在一起。核心功能 Challenge My Trade，会先检查你的假设需要什么证据。当前为开发中的规则原型，下一步接入可引用来源的 AI 分析。#BitgetHackathon @Bitget_AI
+Enter one idea. Stone Brief turns it into falsifiable assumptions and monitoring search terms. Challenge tests the opposing view while preserving that baseline. Remember saves it. What Changed compares only evidence published since the previous review, cites sources, and separates challenged assumptions from missing evidence.
 
-发布时需附官方要求的转发/引用推文；规则页面仍有待填链接，向官方核实。此草稿不代表已发布或已参赛。
+The intended competition fit is AI Trading Desk / decision stress testing. Consult the [official rules](https://bitget-ai.gitbook.io/bitgetai_hackathons2/base-camp-hackathon-s2-cn) for current dates and submission requirements; this document does not claim a submission has been made.
+
+## 90-second demonstration
+
+- **0–15s / Ask Stone:** “我认为 NVDA 的 AI 需求能继续支持增长。”
+- **15–35s / Stone Brief:** show proposed assumptions, invalidation conditions, monitoring terms and source citations.
+- **35–50s / Challenge:** show the opposing case and explain that the original baseline has not changed.
+- **50–60s / Remember:** save and open the simple Memory card.
+- **60–85s / What Changed:** open a previously saved, genuine thesis with evidence published after its last check. Show the exact review window, one assumption's evidence and the reason it needs attention or remains unclear.
+- **85–90s / Share:** download the review card. Close with “Remember why. See what changed.”
+
+Do not fabricate an old timestamp or a challenged outcome for the demonstration. A thesis saved seconds ago may correctly have no new evidence. Source-only briefs must remain visibly labelled; they are not an AI demo.
+
+## Current completion and acceptance
+
+Implemented: public deployment, runtime Qwen/BYOK integration, independent assumption extraction, frozen baselines, incremental reviews, bilingual retrieval, assumption-level selection, browser-local history, share-card download, Markets and CI.
+
+Still unverified: real hosted Qwen end-to-end acceptance. At the last configuration check, `ASKSTONE_DEMO_QWEN_KEY` was absent. Hosted Bitget previously returned 403; verify current quote access separately. No user-study outcomes, model calibration, trading performance or full-source recall claims are made.
+
+Before presenting, use an unauthenticated clean browser without a personal key: Ask Stone → real AI Brief → Challenge → Remember → What Changed. Verify API responses identify the actual provider/model, assumptions remain unchanged, and citations fall strictly within the displayed review window. Check `/api/health?probe=1`; distinguish configured_unverified from ready. Preserve a real acceptance log when this test passes.
+
+## Draft public description
+
+AskStone remembers why you wanted a trade, challenges the assumptions, and shows what later evidence changed. An AI research desk for tokenized equities: Ask Stone → Brief → Challenge → Remember → What Changed. Human judgment stays in control.
+
+This text is a draft, not a published social post. Add required competition material only after checking the official submission instructions.

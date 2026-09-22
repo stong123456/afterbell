@@ -1,28 +1,55 @@
-# AfterBell
+# AskStone
 
-可运行的事件研究台原型，React + Vite + Node。数据源复用 StoneDaily；支持规则检查与可配置的 Qwen 服务端分析；Qwen 需本地配置密钥。
+**AI Thesis OS for tokenized equities**
 
-顶部支持中文 / EN 切换，选择保存在浏览器本地。导航、场景说明、规则报告与 Markdown 导出随语言切换；新闻标题、来源摘要和用户输入保留原文。
+Tell AskStone why you want the trade. It turns your idea into falsifiable assumptions, challenges them with evidence, remembers the original thesis, and shows what changed later.
 
-English: AfterBell is a bilingual event research desk built with React, Vite and Node. It reuses StoneDaily public feeds and offers rule-based thesis challenges, manual basis calculations and position-shock scenarios. Switch between Chinese and English in the header. Original news and user input are never machine-translated. Qwen integration is available with a server-side key; real-provider validation and public website hosting remain pending.
+**Remember why. See what changed.**
 
-本地地址：http://127.0.0.1:4318
+[Open the demo](https://askstone-eventedge.chunmingyang8.chatgpt.site/) · [Product](docs/PRODUCT.md) · [Submission and demo script](docs/SUBMISSION.md) · [CI](https://github.com/stong123456/afterbell/actions)
 
-开发：`npm install`，`npm run build`，`npm start`。Node 22.12+。服务只绑定本地回环地址。`npm test` 验证算术和来源约束。
+```text
+Ask Stone → Stone Brief → Challenge → Remember → What Changed
+```
 
-- [产品、数据源与 Agent 工作流](docs/PRODUCT.md)
-- [参赛说明与演示脚本](docs/SUBMISSION.md)
-- [后续开发提示词](docs/NEXT-CODEX-PROMPT.md)
-- [视觉概念](design/concept.png)
+## What it does
 
-公开部署、Qwen 真实调用验证、真实收盘基准与历史概率模型尚未完成。没有下单接口；不会读取 Hermes 私人配置。
+- **Stone Brief:** one trade idea, a source-backed research brief, and 2–4 falsifiable assumptions with invalidation conditions and monitoring search terms.
+- **Challenge:** examines the opposing case while preserving the first Brief's idea, assumptions and timestamp.
+- **Remember:** stores the baseline in your browser. Advanced manual audit stays behind a secondary action.
+- **What Changed:** retrieves evidence published after the previous check, selects sources against each assumption, and explains what needs attention, what is unclear, or what the new evidence has not changed.
+- **Markets:** Bitget tokenized-stock discovery and quotes remain accessible. Market data is context, not evidence of event causality.
+- **Share:** download a concise review card; nothing is automatically posted.
 
-## 0.2 迭代
+The interface supports Chinese and English. Original source text and user ideas retain their original language.
 
-新增搜索与时间筛选、本地研究记录、证据清单、Qwen 配置与引用校验。见 [迭代说明与限制](docs/ITERATION-02.md)。
+## Honest runtime status
 
-## AskStone 域名接入准备
+The public site is deployed. Runtime AI code supports Qwen and user-supplied provider keys, with output and citation validation. **Hosted Qwen has not passed live acceptance testing: the dedicated server secret was still absent at the latest configuration check.** Without AI, Brief is explicitly labelled Source Brief; it does not manufacture AI conclusions. Users can connect their own supported model in Settings.
 
-`askstone.xyz` 将以 AfterBell 为主产品。已复用旧 AskStone 的宏观/跨资产来源，并整合事件传导工作台和报告证据指纹。域名配置已改为根域名，尚未上线或修改 DNS。见 [接入说明](docs/ASKSTONE-INTEGRATION.md)。
+`/api/health?probe=1` reports AI configuration / observed successful inference, D1, evidence and quote availability separately. Bitget previously returned HTTP 403 from the hosted server even when local quotes worked; deployment success does not certify quote availability. Check current health before presenting.
 
-用户也可在页面的模型设置中填写自己的千问、OpenAI 或 DeepSeek API Key；默认仅当前页面内存保存，刷新清除。详见 [用户模型配置](docs/USER-MODELS.md)。
+Memory runs **on demand**, not as an autonomous background monitoring agent. Records live in the current browser; export is available under Advanced review. News coverage is limited and summaries are not full articles. No calibrated probabilities, automatic orders or performance claims.
+
+## Run locally
+
+Node 22.12 or newer:
+
+```sh
+npm ci
+npm test
+npm run build
+npm start
+```
+
+The server prints its loopback URL. `PORT` selects the port. Use the UI's model settings for local BYOK testing. Production uses a Cloudflare Worker via Sites with D1 `DB`; do not put secrets in the repository or hosting manifest.
+
+Hosted setup: configure `ASKSTONE_DEMO_QWEN_KEY` as a Sites secret. Optional `ASKSTONE_DEMO_QWEN_REGION=intl` selects Singapore (default Beijing), and `ASKSTONE_DEMO_QWEN_MODEL` defaults to `qwen-plus`. Hosted selection uses `ASKSTONE_RERANK_MODEL` (default `qwen-turbo`) with a 12-second timeout; final analysis has a 45-second timeout. BYOK uses the user's selected model for both passes. Model availability and live latency still require provider testing.
+
+Hosted attempts are limited to 15 per IP and 300 globally per UTC day through D1. Failed attempts count; an incremental review may make two model calls. No result cache is currently enabled.
+
+## Engineering checks
+
+GitHub Actions runs `npm ci`, `npm test`, and `npm run build` on main pushes and pull requests. Regression coverage includes immutable baselines, incremental time windows, bilingual retrieval, monitoring profiles, forged citations, quota limits and provider-key isolation. Mock-provider tests are not live Qwen acceptance evidence.
+
+The repository name `afterbell` reflects the project's original name. The current product is **AskStone**. Historical release notes describe earlier versions; the README, Product and Submission documents describe the current experience.

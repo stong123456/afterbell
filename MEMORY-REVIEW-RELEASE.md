@@ -1,5 +1,15 @@
 # Decision Memory and What Changed
 
+## Incremental-window and monitoring-profile update
+
+The API now separates immutable baselineAt from reviewSince (last successful review checkedAt, or the baseline for a first check). Both retrieval and the final model payload use reviewSince. Invalid and future windows are rejected. Responses preserve both timestamps and the UI discloses the exact review window. Legacy createdAt callers retain first-check compatibility.
+
+New AI briefs require per-assumption monitor_terms; terms are bounded, stored with the frozen baseline and passed to retrieval. Missing profiles on old records remain supported. A profile replaces the fixed company exposure expansion, while bilingual thesis/alias matching remains. This is an on-demand monitoring profile, not a background agent.
+
+Selection timeout is now 12 seconds. Hosted selection uses configurable ASKSTONE_RERANK_MODEL (default qwen-turbo), while final analysis retains ASKSTONE_DEMO_QWEN_MODEL. BYOK uses the selected user model for both stages. Live provider latency is unverified. Model metadata distinguishes the reranker from final analysis.
+
+52 local regression tests and the production build passed. A mock integration test verifies that both model calls receive only post-reviewSince evidence. Hosted Qwen acceptance remains blocked by the absent dedicated secret; no live model success is claimed. README, PRODUCT, SUBMISSION, repository description and homepage now identify AskStone.
+
 ## Continuity update
 
 The first Brief's idea, assumptions and timestamp are frozen for Challenge and Remember. Challenge validates the baseline and never requests replacement assumptions. Unreviewed leads are counted since the latest valid check (or initial baseline), including records older than 24 hours; new leads take precedence over historical conclusions.
