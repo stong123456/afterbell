@@ -13,8 +13,9 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
-COPY stone-brief.mjs evidence-feeds.mjs server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs bitget.mjs ./
+COPY ai-runtime.mjs stone-brief.mjs evidence-feeds.mjs server.mjs stone-adapter.mjs qwen.mjs deployment.mjs context.mjs askstone-sources.mjs bitget.mjs ./
 COPY src/research.mjs ./src/research.mjs
+COPY src/change-review.mjs ./src/change-review.mjs
 COPY src/decision.mjs ./src/decision.mjs
 COPY src/detective.mjs ./src/detective.mjs
 COPY src/providers.mjs ./src/providers.mjs

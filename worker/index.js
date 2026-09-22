@@ -1,4 +1,5 @@
-import {stoneBrief,demoConfig,reserveDemo} from '../stone-brief.mjs';
+import {aiRuntimeState} from '../ai-runtime.mjs';
+import {stoneBrief,checkWhatChanged,demoConfig,reserveDemo} from '../stone-brief.mjs';
 import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
 import {stoneNews,stoneMarket} from '../stone-adapter.mjs';
 import {researchContext,contextEvidence} from '../context.mjs';
@@ -26,12 +27,21 @@ async function body(request){
 export async function handle(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/bitget'&&request.method==='GET')return json(await bitgetMarket(url.searchParams.get('symbol')));
- if(url.pathname==='/api/health')return json({ok:true,product:'AskStone',version:'0.4.0',ai:demoConfig(env)});
- if(url.pathname==='/api/brief'&&request.method==='POST'){
+ if(url.pathname==='/api/health'){
+  const services={database:env.DB?'bound_unverified':'missing',evidence:'unchecked',market:'unchecked'};
+  if(url.searchParams.get('probe')==='1'){
+   const results=await Promise.allSettled([env.DB?.prepare('SELECT 1 AS ok').first(),stoneNews(),bitgetMarket('NVDA')]);
+   services.database=results[0].status==='fulfilled'&&results[0].value?.ok===1?'ready':'unavailable';
+   services.evidence=results[1].status==='fulfilled'&&results[1].value.events?.length>0?'ready':'unavailable';
+   const m=results[2].status==='fulfilled'?results[2].value:null;services.market=m?.price>0&&Math.abs(Date.now()-m.quoteTimestamp)<120000?'ready':'unavailable';
+  }
+  return json({ok:true,product:'AskStone',version:'0.5.0',ai:aiRuntimeState(demoConfig(env)),services,checkedAt:new Date().toISOString(),scope:'AI ready only after successful demo inference in this worker; probe=1 checks data dependencies'});
+ }
+ if(['/api/brief','/api/changes'].includes(url.pathname)&&request.method==='POST'){
   if(request.headers.get('origin')!==url.origin)return json({error:'ORIGIN_NOT_ALLOWED'},403);
   if(!request.headers.get('content-type')?.startsWith('application/json'))return json({error:'JSON_REQUIRED'},415);
   if(active>=2)return json({error:'MODEL_BUSY'},429);
-  const input=await body(request);active++;try{return json(await stoneBrief(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip'))));}finally{active--;}
+  const input=await body(request);active++;try{return json(await (url.pathname==='/api/changes'?checkWhatChanged:stoneBrief)(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip'))));}finally{active--;}
  }
  if(url.pathname==='/api/news'&&request.method==='GET'){const news=await stoneNews();await remember(env,news.events||[]);return json(news);}
  if(url.pathname==='/api/bitget/catalog')return json(await bitgetCatalog());

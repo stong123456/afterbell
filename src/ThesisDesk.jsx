@@ -2,9 +2,9 @@ import React,{useState,useRef} from 'react';
 import {StockLogo} from './StockLogo.jsx';
 import {bitgetMarket} from '../bitget.mjs';
 import {THESIS_KEY,STATES,splitAssumptions,createThesis,readTheses,health,candidates,recordReview,marketDifference} from './thesis-memory.mjs';
-export function ThesisDesk({lang,events,loading,refresh,onChallenge,onLibrary,onCreate}){
+export function ThesisDesk({lang,events,loading,refresh,onChallenge,onLibrary,onCreate,initialId}){
  const t=(zh,en)=>lang==='en'?en:zh;
- const [book,setBook]=useState(()=>readTheses(localStorage)),[selected,setSelected]=useState(null),[creating,setCreating]=useState(false),[idea,setIdea]=useState(''),[symbol,setSymbol]=useState('NVDA'),[horizon,setHorizon]=useState(''),[draft,setDraft]=useState(null),[notice,setNotice]=useState(''),[review,setReview]=useState({}),[busy,setBusy]=useState(false),[current,setCurrent]=useState(null),[peer,setPeer]=useState('SPY');
+ const [book,setBook]=useState(()=>readTheses(localStorage)),[selected,setSelected]=useState(initialId||null),[creating,setCreating]=useState(false),[idea,setIdea]=useState(''),[symbol,setSymbol]=useState('NVDA'),[horizon,setHorizon]=useState(''),[draft,setDraft]=useState(null),[notice,setNotice]=useState(''),[review,setReview]=useState({}),[busy,setBusy]=useState(false),[current,setCurrent]=useState(null),[peer,setPeer]=useState('SPY');
  const bookRef=useRef(book);bookRef.current=book;
  const active=book.find(b=>b.id===selected),h=active&&health(active),newEvents=active?candidates(active,events):[];
  const label=s=>({unverified:t('待核实','Unverified'),supported:t('有支持证据','Supported'), 'at-risk':t('受到挑战','At risk'),broken:t('已被推翻','Broken')})[s];

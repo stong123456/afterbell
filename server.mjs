@@ -1,4 +1,4 @@
-import {stoneBrief,demoConfig} from './stone-brief.mjs';
+import {stoneBrief,checkWhatChanged,demoConfig} from './stone-brief.mjs';
 import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from './bitget.mjs';
 import {stoneMarket,stoneNews} from './stone-adapter.mjs';
 import http from 'node:http';
@@ -24,12 +24,12 @@ http.createServer(async(req,res)=>{
   if(url.pathname==='/api/bitget/catalog')return send(res,200,await bitgetCatalog());
   if(url.pathname==='/api/market'){latestMarket=await stoneMarket();return send(res,200,latestMarket);}
   if(url.pathname==='/api/news'){const news=await stoneNews();remember(news.events);return send(res,200,news);}
-  if(url.pathname==='/api/brief'&&req.method==='POST'){
+  if(['/api/brief','/api/changes'].includes(url.pathname)&&req.method==='POST'){
    if(!requestAllowed(req.headers,deployment))return send(res,403,{error:'ORIGIN_NOT_ALLOWED'});
    if(!req.headers['content-type']?.startsWith('application/json'))return send(res,415,{error:'JSON_REQUIRED'});
    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12000)return send(res,413,{error:'REQUEST_TOO_LARGE'});chunks.push(chunk);}
    if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
-   activeModels++;try{return send(res,200,await stoneBrief(JSON.parse(Buffer.concat(chunks).toString('utf8')),{},async()=>{throw Error('DEMO_LIMIT_UNAVAILABLE');}));}finally{activeModels--;}
+   activeModels++;try{return send(res,200,await (url.pathname==='/api/changes'?checkWhatChanged:stoneBrief)(JSON.parse(Buffer.concat(chunks).toString('utf8')),{},async()=>{throw Error('DEMO_LIMIT_UNAVAILABLE');}));}finally{activeModels--;}
   }
   if(url.pathname==='/api/challenge'&&req.method==='POST'){
    if(!requestAllowed(req.headers,deployment))return send(res,403,{error:'ORIGIN_NOT_ALLOWED'});
