@@ -1,5 +1,13 @@
 # Decision Memory and What Changed
 
+## Continuity update
+
+The first Brief's idea, assumptions and timestamp are frozen for Challenge and Remember. Challenge validates the baseline and never requests replacement assumptions. Unreviewed leads are counted since the latest valid check (or initial baseline), including records older than 24 hours; new leads take precedence over historical conclusions.
+
+Retrieval uses company aliases, bilingual thesis phrases and explicit sector/exposure topics, not a blanket Policy/Macro bonus. An AI selection pass maps candidates to assumptions, with up to two IDs per assumption and eight total sources for assessment. Empty selections produce unclear. This is a heuristic retrieval pipeline, not a measured recall guarantee. Hosted review uses up to two bounded model calls per reserved attempt. Daily limits are 15 per IP and 300 global, including failed attempts. No response cache has been added.
+
+Review cards can be downloaded as SVG without automatically posting to a social network. They identify unclear assumptions and distinguish source-only checks from AI analysis. GitHub Actions runs npm ci, npm test and npm run build on main pushes and pull requests. Local regression suite: 49 tests pass. No real hosted Qwen test was possible: the dedicated secret remains absent.
+
 Markets remains in the primary navigation alongside Ask Stone and Memory. Home retains its single-input entry point. Memory now opens with thesis summary cards; manual audits, quote comparisons and archiving live under Advanced review.
 
 AI briefs extract 2–4 separate, falsifiable assumptions with explicit invalidation conditions. They are not derived from supporting evidence checks. Without AI, the source brief stores only the original view, clearly unverified.
