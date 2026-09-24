@@ -1,4 +1,5 @@
 export const providers={
+ 'bitget-qwen':{label:'Qwen · Bitget Hackathon',base:'https://hackathon.bitgetops.com/v1',model:'qwen3.8-max'},
  qwen:{label:'Qwen · Beijing',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'},
  'qwen-intl':{label:'Qwen · Singapore',base:'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'},
  openai:{label:'OpenAI',base:'https://api.openai.com/v1',model:'gpt-4o-mini'},
