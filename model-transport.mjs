@@ -1,6 +1,8 @@
 // The competition-issued credential is scoped to Bitget's documented gateway.
 // Keep the existing chat-completions contract for other allowlisted providers.
 export async function modelFetch(url,options){
+ // Workers supports manual redirects; never forward credentials to a redirect target.
+ options={...options,redirect:'manual'};
  if(url!=='https://hackathon.bitgetops.com/v1/chat/completions')return fetch(url,options);
  const request=JSON.parse(options.body);
  let response;try{response=await fetch('https://hackathon.bitgetops.com/v1/responses',{
