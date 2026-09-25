@@ -45,8 +45,15 @@ export function normalizeMarket(symbol,info,ticker,book,candles,now=Date.now()){
  const quote=ticker?.symbol===pair?ticker:null;
  return{status:quote?'ok':'partial',provider:'Bitget',symbol,pair,baseCoin:info.baseCoin,quoteCurrency:'USDT',tradingStatus:info.status,price:positive(quote?.lastPr),change24hPct:n(quote?.change24h)===null?null:n(quote.change24h)*100,volume24hUSDT:n(quote?.usdtVolume),quoteTimestamp:n(quote?.ts),bookTimestamp:n(book?.ts),retrievedAt:new Date(now).toISOString(),tradeTimestamp:null,spreadPct:validBook?(ask-bid)/((ask+bid)/2)*100:null,bids,asks,bidDepthUSDT:bids.reduce((s,[p,q])=>s+p*q,0),askDepthUSDT:asks.reduce((s,[p,q])=>s+p*q,0),depthLevels:5,candles:rows,source:`${base}/api/v2/spot/market/tickers?symbol=${pair}`};
 }
+async function sharedFeed(symbol){
+ const url='https://stonedaily.xyz/api/bitget'+(symbol?'?symbol='+encodeURIComponent(symbol):'');
+ const old=cache.get(url);if(old&&Date.now()-old.at<15000)return old.value;
+ if(pending.has(url))return pending.get(url);
+ const job=(async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(18000)});if(!r.ok)throw Error('SHARED_FEED_UNAVAILABLE');const d=await r.json();if(d.status!=='ok'||d.provider!=='Bitget'||d.via!=='StoneDaily')throw Error('INVALID_SHARED_FEED');const at=Date.parse(d.retrievedAt);if(!Number.isFinite(at)||Math.abs(Date.now()-at)>120000)throw Error('STALE_SHARED_FEED');cache.set(url,{at:Date.now(),value:d});return d;})();pending.set(url,job);try{return await job;}finally{pending.delete(url);}
+}
 export async function bitgetMarket(symbol){
  if(!validSymbol(symbol))return{status:'unavailable',symbol,reason:'UNSUPPORTED_ASSET'};
+ try{const d=await sharedFeed(symbol);const m=normalizeMarket(symbol,d.info,d.ticker,d.book,d.candles);if(m.price)return {...m,via:'StoneDaily',retrievedAt:d.retrievedAt,transportSource:'https://stonedaily.xyz/api/bitget?symbol='+symbol};}catch{}
  try{
   const pair=`R${symbol}USDT`;const infos=await load('/api/v2/spot/public/symbols',300000);const info=infos.find(i=>i.symbol===pair);
   if(!info)return{status:'unavailable',symbol,reason:'NO_VERIFIED_RTOKEN'};
@@ -59,7 +66,7 @@ export async function bitgetMarket(symbol){
 }
 export async function bitgetEvidence(assets){
  const results=await Promise.all(assets.filter(validSymbol).slice(0,3).map(bitgetMarket));
- return results.filter(r=>r.price!==null&&r.price!==undefined).map((r,i)=>({id:`BG${i+1}`,kind:'market-snapshot',title:`Bitget ${r.pair} · ${r.fallback?'StoneDaily snapshot':'direct snapshot'}`,summary:JSON.stringify({...r,candles:undefined}),url:r.source,publishedAt:null,scope:r.fallback?'aggregated-token-snapshot; quote-time-unknown; not-equity-close':'direct-token-quote-not-equity-close; timestamps-in-summary'}));
+ return results.filter(r=>r.price!==null&&r.price!==undefined).map((r,i)=>({id:`BG${i+1}`,kind:'market-snapshot',title:`Bitget ${r.pair} · ${r.fallback?'StoneDaily snapshot':r.via?'StoneDaily feed':'direct snapshot'}`,summary:JSON.stringify({...r,candles:undefined}),url:r.source,publishedAt:null,scope:r.fallback?'aggregated-token-snapshot; quote-time-unknown; not-equity-close':'direct-token-quote-not-equity-close; timestamps-in-summary'}));
 }
 export function browserMarketEvidence(value,assets,now=Date.now()){
  if(!value||!assets.includes(value.symbol)||!validSymbol(value.symbol)||value.pair!==`R${value.symbol}USDT`||!Number.isFinite(value.price)||value.price<=0||!Number.isFinite(value.quoteTimestamp)||Math.abs(now-value.quoteTimestamp)>120000)return [];
@@ -72,7 +79,7 @@ export function normalizeCatalog(infos,tickers=[]){
  const quotes=new Map(tickers.map(q=>[q.symbol,q]));
  return infos.filter(i=>/^r[A-Z0-9.]{1,16}$/.test(i.baseCoin)&&i.quoteCoin==='USDT'&&i.symbol===i.baseCoin.toUpperCase()+'USDT').map(i=>{const q=quotes.get(i.symbol);return {symbol:i.baseCoin.slice(1),pair:i.symbol,baseCoin:i.baseCoin,status:i.status,price:positive(q?.lastPr),change24hPct:n(q?.change24h)===null?null:n(q.change24h)*100,volume24hUSDT:n(q?.usdtVolume),quoteTimestamp:n(q?.ts)};}).sort((a,b)=>(b.volume24hUSDT??-1)-(a.volume24hUSDT??-1));
 }
-export async function bitgetCatalog(){try{const infos=await load('/api/v2/spot/public/symbols',300000);let ticks=[];try{ticks=await load('/api/v2/spot/market/tickers',30000,12000);}catch{}if(!ticks.length){try{return await stockSnapshot();}catch{}}return {status:ticks.length?'ok':'partial',assets:normalizeCatalog(infos,ticks),retrievedAt:new Date().toISOString(),source:base+'/api/v2/spot/public/symbols'};}catch(e){try{return {...await stockSnapshot(),reason:e.message};}catch{return {status:'unavailable',assets:[],reason:e.message,retrievedAt:new Date().toISOString()};}}}
+export async function bitgetCatalog(){try{const d=await sharedFeed();const assets=normalizeCatalog(d.infos,d.tickers);if(assets.length)return {status:'ok',assets,provider:'Bitget',via:'StoneDaily',retrievedAt:d.retrievedAt,source:base+'/api/v2/spot/public/symbols',transportSource:'https://stonedaily.xyz/api/bitget'};}catch{}try{const infos=await load('/api/v2/spot/public/symbols',300000);let ticks=[];try{ticks=await load('/api/v2/spot/market/tickers',30000,12000);}catch{}if(!ticks.length){try{return await stockSnapshot();}catch{}}return {status:ticks.length?'ok':'partial',assets:normalizeCatalog(infos,ticks),retrievedAt:new Date().toISOString(),source:base+'/api/v2/spot/public/symbols'};}catch(e){try{return {...await stockSnapshot(),reason:e.message};}catch{return {status:'unavailable',assets:[],reason:e.message,retrievedAt:new Date().toISOString()};}}}
 
 export async function comparisonEvidence(event,peers){
  if(!Array.isArray(peers))return [];

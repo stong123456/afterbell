@@ -33,3 +33,10 @@ test('blocked direct market recovers catalog and price with honest missing depth
  const c=await bitgetCatalog();assert.equal(c.assets[0].pair,'RNVDAUSDT');assert.equal(c.fallback,true);
  }finally{globalThis.fetch=original;}
 });
+
+test('shared collector is preferred and retains original exchange timestamps and depth',async()=>{
+ const original=globalThis.fetch;const now=Date.now();let calls=0;
+ try{globalThis.fetch=async url=>{assert.equal(String(url),'https://stonedaily.xyz/api/bitget?symbol=AAPL');calls++;return new Response(JSON.stringify({status:'ok',provider:'Bitget',via:'StoneDaily',retrievedAt:new Date().toISOString(),info:{symbol:'RAAPLUSDT',baseCoin:'rAAPL',quoteCoin:'USDT',status:'online'},ticker:{symbol:'RAAPLUSDT',lastPr:'210',ts:String(now)},book:{bids:[['209','2']],asks:[['211','3']],ts:String(now-1000)},candles:[[now-3600000,'200','212','199','210','10']]}));};
+ const m=await bitgetMarket('AAPL');assert.equal(calls,1);assert.equal(m.via,'StoneDaily');assert.equal(m.quoteTimestamp,now);assert.equal(m.bookTimestamp,now-1000);assert.equal(m.bids.length,1);assert.equal(m.candles.length,1);assert.equal(m.status,'ok');
+ }finally{globalThis.fetch=original;}
+});
