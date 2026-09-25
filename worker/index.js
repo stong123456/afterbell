@@ -33,7 +33,7 @@ export async function handle(request,env){
    const results=await Promise.allSettled([env.DB?.prepare('SELECT 1 AS ok').first(),stoneNews(),bitgetMarket('NVDA')]);
    services.database=results[0].status==='fulfilled'&&results[0].value?.ok===1?'ready':'unavailable';
    services.evidence=results[1].status==='fulfilled'&&results[1].value.events?.length>0?'ready':'unavailable';
-   const m=results[2].status==='fulfilled'?results[2].value:null;services.market=m?.price>0&&Math.abs(Date.now()-m.quoteTimestamp)<120000?'ready':'unavailable';
+   const m=results[2].status==='fulfilled'?results[2].value:null;services.market=m?.price>0&&Math.abs(Date.now()-m.quoteTimestamp)<120000?'ready':m?.fallback&&m.price>0&&Date.now()-Date.parse(m.snapshotAt)<300000?'degraded':'unavailable';
   }
   return json({ok:true,product:'AskStone',version:'0.5.0',ai:aiRuntimeState(demoConfig(env)),services,checkedAt:new Date().toISOString(),scope:'AI ready only after successful demo inference in this worker; probe=1 checks data dependencies'});
  }
