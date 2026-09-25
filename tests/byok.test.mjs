@@ -14,7 +14,7 @@ test('BYOK routes each key to its provider only and reports/journal contain no c
  try{for(const provider of ['qwen','qwen-intl','openai','deepseek']){
   const input={provider,apiKey:`test-only-${provider}`,model:'test-model'};
   globalThis.fetch=async(url,options)=>{
-   assert.ok(url.startsWith(userModelConfig(input).base));assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,`Bearer ${input.apiKey}`);
+   assert.ok(url.startsWith(userModelConfig(input).base));assert.equal(options.redirect,'manual');assert.equal(options.headers.Authorization,`Bearer ${input.apiKey}`);
    assert.ok(!options.body.includes(input.apiKey));const body=JSON.parse(options.body);assert.equal('enable_thinking' in body,provider.startsWith('qwen'));
    return{ok:true,json:async()=>({choices:[{message:{content:JSON.stringify({verdict:'Needs evidence',checks:[{title:'A',body:'Unknown',type:'hypothesis',evidenceIds:[]},{title:'B',body:'Counterpoint',type:'counterpoint',evidenceIds:[]}],missing:['Full source']})}}]})};
   };
@@ -23,3 +23,4 @@ test('BYOK routes each key to its provider only and reports/journal contain no c
   saveRecord({getItem:()=>saved||'[]',setItem:(_,s)=>{saved=s;}},{version:1,id:provider,savedAt:new Date().toISOString(),event:scenarios[0],report});assert.ok(!saved.includes(input.apiKey));
  }}finally{globalThis.fetch=original;}
 });
+

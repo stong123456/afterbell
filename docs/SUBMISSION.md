@@ -27,7 +27,7 @@ Do not fabricate an old timestamp or a challenged outcome for the demonstration.
 
 Implemented: public deployment, runtime Qwen/BYOK integration, independent assumption extraction, frozen baselines, incremental reviews, bilingual retrieval, assumption-level selection, browser-local history, share-card download, Markets and CI.
 
-Still unverified: real hosted Qwen end-to-end acceptance. At the last configuration check, `ASKSTONE_DEMO_QWEN_KEY` was absent. Hosted Bitget previously returned 403; verify current quote access separately. No user-study outcomes, model calibration, trading performance or full-source recall claims are made.
+Still unverified: real hosted Qwen end-to-end acceptance. The dedicated competition key is now configured for the Bitget Qwen 3.8 Max gateway. Configuration alone does not certify the full workflow. Hosted Bitget previously returned 403; verify current quote access separately. No user-study outcomes, model calibration, trading performance or full-source recall claims are made.
 
 Before presenting, use an unauthenticated clean browser without a personal key: Ask Stone → real AI Brief → Challenge → Remember → What Changed. Verify API responses identify the actual provider/model, assumptions remain unchanged, and citations fall strictly within the displayed review window. Check `/api/health?probe=1`; distinguish configured_unverified from ready. Preserve a real acceptance log when this test passes.
 

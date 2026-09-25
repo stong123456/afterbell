@@ -38,4 +38,4 @@ Bitget product identity and quote freshness are validated. Token quotes are not 
 
 React/Vite frontend; Node local server; Sites-hosted Worker with D1 for hosted quotas and existing source storage. Decision Memory stays browser-local. BYOK settings support allowlisted providers. Hosted AI requires a dedicated secret; legacy unrelated keys are ignored. External content is untrusted data, never instructions.
 
-Current hosted-model acceptance remains pending because the dedicated key was absent at the last check. Use the public health endpoint and perform a real no-BYOK demo before claiming hosted readiness.
+The dedicated competition key is now configured for the Bitget Qwen 3.8 Max gateway; full hosted-model acceptance remains pending. Use the public health endpoint and perform a real no-BYOK demo before claiming hosted readiness.

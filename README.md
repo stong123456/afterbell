@@ -25,7 +25,7 @@ The interface supports Chinese and English. Original source text and user ideas 
 
 ## Honest runtime status
 
-The public site is deployed. Runtime AI code supports Qwen and user-supplied provider keys, with output and citation validation. **Hosted Qwen has not passed live acceptance testing: the dedicated server secret was still absent at the latest configuration check.** Without AI, Brief is explicitly labelled Source Brief; it does not manufacture AI conclusions. Users can connect their own supported model in Settings.
+The public site is deployed. Runtime AI code supports Qwen and user-supplied provider keys, with output and citation validation. **The competition-issued key is now configured as a server-side secret for Qwen 3.8 Max through the official Bitget gateway. Live end-to-end acceptance remains in progress; configuration is not proof of a successful Brief.** Without AI, Brief is explicitly labelled Source Brief; it does not manufacture AI conclusions. Users can connect their own supported model in Settings.
 
 `/api/health?probe=1` reports AI configuration / observed successful inference, D1, evidence and quote availability separately. Bitget previously returned HTTP 403 from the hosted server even when local quotes worked; deployment success does not certify quote availability. Check current health before presenting.
 
@@ -44,7 +44,9 @@ npm start
 
 The server prints its loopback URL. `PORT` selects the port. Use the UI's model settings for local BYOK testing. Production uses a Cloudflare Worker via Sites with D1 `DB`; do not put secrets in the repository or hosting manifest.
 
-Hosted setup: configure `ASKSTONE_DEMO_QWEN_KEY` as a Sites secret. Optional `ASKSTONE_DEMO_QWEN_REGION=intl` selects Singapore (default Beijing), and `ASKSTONE_DEMO_QWEN_MODEL` defaults to `qwen-plus`. Hosted selection uses `ASKSTONE_RERANK_MODEL` (default `qwen-turbo`) with a 12-second timeout; final analysis has a 45-second timeout. BYOK uses the user's selected model for both passes. Model availability and live latency still require provider testing.
+Competition gateway: `ASKSTONE_DEMO_QWEN_PROVIDER=bitget-qwen`, `ASKSTONE_DEMO_QWEN_MODEL=qwen3.8-max`, and `ASKSTONE_RERANK_MODEL=qwen3.8-max`. Requests use the documented Responses endpoint at `https://hackathon.bitgetops.com/v1/responses`; secrets are never stored in Git. This Max-only route permits up to 30 seconds for selection and 90 seconds for final analysis (150-second browser limit), rather than the direct-provider 12/45-second budgets. Workers requests use manual redirect handling to prevent credential forwarding.
+
+Direct Alibaba Cloud setup: configure `ASKSTONE_DEMO_QWEN_KEY` as a Sites secret. Optional `ASKSTONE_DEMO_QWEN_REGION=intl` selects Singapore (default Beijing), and `ASKSTONE_DEMO_QWEN_MODEL` defaults to `qwen-plus`. Hosted selection uses `ASKSTONE_RERANK_MODEL` (default `qwen-turbo`) with a 12-second timeout; final analysis has a 45-second timeout. BYOK uses the user's selected model for both passes. Model availability and live latency still require provider testing.
 
 Hosted attempts are limited to 15 per IP and 300 globally per UTC day through D1. Failed attempts count; an incremental review may make two model calls. No result cache is currently enabled.
 
