@@ -31,16 +31,18 @@ export async function stoneBrief(input,env={},permit=async()=>{}){
  if(action==='challenge'&&!own&&!demo.configured)throw Error('AI_NOT_CONFIGURED');
  // Reserve attempts before any expensive upstream work. Dedicated demo key only.
  if(!own&&demo.configured)await permit();
+ const started=Date.now();
  const [news,market]=await Promise.all([stoneNews(),bitgetMarket(symbol)]);
+ const evidenceMs=Date.now()-started;
  const relevant=news.events.filter(e=>e.assets?.includes(symbol)).slice(0,8);
- const evidence=relevant.map((e,i)=>({id:'N'+(i+1),kind:'source',title:e.title,summary:e.summary,url:e.source,publishedAt:e.publishedAt,scope:'reported-headline-and-summary-not-independently-verified'}));
+ const evidence=relevant.map((e,i)=>({id:'N'+(i+1),kind:'source',title:e.title,summary:String(e.summary||'').slice(0,500),url:e.source,publishedAt:e.publishedAt,scope:'reported-headline-and-summary-not-independently-verified'}));
  const fresh=market.price>0&&Number.isFinite(market.quoteTimestamp)&&Math.abs(Date.now()-market.quoteTimestamp)<120000;
  if(fresh)evidence.push({id:'M1',kind:'market-snapshot',title:symbol+' Bitget token quote',summary:JSON.stringify({price:market.price,change24hPct:market.change24hPct,quoteTimestamp:market.quoteTimestamp,warning:'rolling 24h change, not event impact or sector-adjusted return'}),url:market.source,publishedAt:new Date(market.quoteTimestamp).toISOString(),scope:'token-quote-not-underlying-equity'});
  let report=null;
- if(own||demo.configured){const config=own?input.modelConfig:{...demo,apiKey:env.ASKSTONE_DEMO_QWEN_KEY};report=await qwenChallenge((action==='challenge'?'Act as a skeptical counterparty. Challenge, do not redefine these frozen original assumptions: '+JSON.stringify(baseline?.assumptions)+'. Original thesis: ':'Give a concise balanced brief. ')+idea,{kind:'source',title:symbol+' · combined evidence'},evidence,lang,config,{extractAssumptions:action!=='challenge'});}
+ if(own||demo.configured){const config=own?input.modelConfig:{...demo,apiKey:env.ASKSTONE_DEMO_QWEN_KEY};report=await qwenChallenge((action==='challenge'?'Act as a skeptical counterparty. Challenge, do not redefine these frozen original assumptions: '+JSON.stringify(baseline?.assumptions)+'. Original thesis: ':'Give a concise balanced brief. ')+idea,{kind:'source',title:symbol+' · combined evidence'},evidence,lang,config,{extractAssumptions:action!=='challenge',compact:true});}
  if(report&&!own)noteAISuccess(report.provider,report.model);
  const assumptions=baseline?.assumptions||report?.assumptions||[];
- return {symbol,idea,horizon:lang==='en'?'Next 30 days (default)':'未来 30 天（默认）',createdAt:baseline?.createdAt||new Date().toISOString(),mode:report?'ai':'evidence-only',action,report,assumptions:assumptions.length?assumptions:[{text:idea,invalidation:''}],evidence,sourceCount:relevant.length,market:fresh?{price:market.price,change24hPct:market.change24hPct,at:market.quoteTimestamp,url:market.source}:null};
+ return {timings:{evidenceMs,analysisMs:Date.now()-started-evidenceMs,totalMs:Date.now()-started},symbol,idea,horizon:lang==='en'?'Next 30 days (default)':'未来 30 天（默认）',createdAt:baseline?.createdAt||new Date().toISOString(),mode:report?'ai':'evidence-only',action,report,assumptions:assumptions.length?assumptions:[{text:idea,invalidation:''}],evidence,sourceCount:relevant.length,market:fresh?{price:market.price,change24hPct:market.change24hPct,at:market.quoteTimestamp,url:market.source}:null};
 }
 export async function checkWhatChanged(raw,env={},permit=async()=>{}){
  const input=reviewInput(raw),demo=demoConfig(env),own=raw.modelConfig?userModelConfig(raw.modelConfig):null;
