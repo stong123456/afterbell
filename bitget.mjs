@@ -20,7 +20,7 @@ export function normalizeStockSnapshot(d,now=Date.now()){
   const symbol=a.underlying;
   if(!validSymbol(symbol)||a.venue!=='Bitget'||a.productType!=='tokenized-spot'||a.feedMode!=='live'||a.symbol!==`r${symbol}`||a.quoteCurrency!=='USDT'||!positive(a.price)||seen.has(symbol))return [];
   seen.add(symbol);
-  return [{symbol,pair:`R${symbol}USDT`,baseCoin:a.symbol,status:'online',price:positive(a.price),change24hPct:n(a.change24h),volume24hUSDT:n(a.volume),quoteTimestamp:null}];
+  return [{symbol,pair:`R${symbol}USDT`,baseCoin:a.symbol,status:'online',price:positive(a.price),change24hPct:n(a.change24h),volume24hUSDT:n(a.volume),volume24hToken:null,quoteTimestamp:null}];
  }).sort((a,b)=>(b.volume24hUSDT??-1)-(a.volume24hUSDT??-1));
  if(!assets.length)throw Error('NO_VALID_STOCK_SNAPSHOT');
  return {status:'partial',assets,provider:'Bitget via StoneDaily',fallback:true,snapshotAt:new Date(at).toISOString(),retrievedAt:new Date(now).toISOString(),source:snapshotSource};
@@ -77,7 +77,7 @@ export function browserMarketEvidence(value,assets,now=Date.now()){
 
 export function normalizeCatalog(infos,tickers=[]){
  const quotes=new Map(tickers.map(q=>[q.symbol,q]));
- return infos.filter(i=>/^r[A-Z0-9.]{1,16}$/.test(i.baseCoin)&&i.quoteCoin==='USDT'&&i.symbol===i.baseCoin.toUpperCase()+'USDT').map(i=>{const q=quotes.get(i.symbol);return {symbol:i.baseCoin.slice(1),pair:i.symbol,baseCoin:i.baseCoin,status:i.status,price:positive(q?.lastPr),change24hPct:n(q?.change24h)===null?null:n(q.change24h)*100,volume24hUSDT:n(q?.usdtVolume),quoteTimestamp:n(q?.ts)};}).sort((a,b)=>(b.volume24hUSDT??-1)-(a.volume24hUSDT??-1));
+ return infos.filter(i=>/^r[A-Z0-9.]{1,16}$/.test(i.baseCoin)&&i.quoteCoin==='USDT'&&i.symbol===i.baseCoin.toUpperCase()+'USDT').map(i=>{const q=quotes.get(i.symbol);return {symbol:i.baseCoin.slice(1),pair:i.symbol,baseCoin:i.baseCoin,status:i.status,price:positive(q?.lastPr),change24hPct:n(q?.change24h)===null?null:n(q.change24h)*100,volume24hUSDT:n(q?.usdtVolume),volume24hToken:n(q?.baseVolume),quoteTimestamp:n(q?.ts)};}).sort((a,b)=>(b.volume24hUSDT??-1)-(a.volume24hUSDT??-1));
 }
 export async function bitgetCatalog(){try{const d=await sharedFeed();const assets=normalizeCatalog(d.infos,d.tickers);if(assets.length)return {status:'ok',assets,provider:'Bitget',via:'StoneDaily',retrievedAt:d.retrievedAt,source:base+'/api/v2/spot/public/symbols',transportSource:'https://stonedaily.xyz/api/bitget'};}catch{}try{const infos=await load('/api/v2/spot/public/symbols',300000);let ticks=[];try{ticks=await load('/api/v2/spot/market/tickers',30000,12000);}catch{}if(!ticks.length){try{return await stockSnapshot();}catch{}}return {status:ticks.length?'ok':'partial',assets:normalizeCatalog(infos,ticks),retrievedAt:new Date().toISOString(),source:base+'/api/v2/spot/public/symbols'};}catch(e){try{return {...await stockSnapshot(),reason:e.message};}catch{return {status:'unavailable',assets:[],reason:e.message,retrievedAt:new Date().toISOString()};}}}
 
