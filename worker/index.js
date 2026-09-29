@@ -1,3 +1,4 @@
+import {briefStream} from '../brief-stream.mjs';
 import {aiRuntimeState} from '../ai-runtime.mjs';
 import {stoneBrief,checkWhatChanged,demoConfig,reserveDemo} from '../stone-brief.mjs';
 import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from '../bitget.mjs';
@@ -41,7 +42,9 @@ export async function handle(request,env){
   if(request.headers.get('origin')!==url.origin)return json({error:'ORIGIN_NOT_ALLOWED'},403);
   if(!request.headers.get('content-type')?.startsWith('application/json'))return json({error:'JSON_REQUIRED'},415);
   if(active>=2)return json({error:'MODEL_BUSY'},429);
-  const input=await body(request);active++;try{return json(await (url.pathname==='/api/changes'?checkWhatChanged:stoneBrief)(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip'))));}finally{active--;}
+  const input=await body(request);active++;
+  if(url.pathname==='/api/brief'&&request.headers.get('accept')?.includes('application/x-ndjson'))return briefStream(emit=>stoneBrief(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip')),emit),()=>{active--;});
+  try{return json(await (url.pathname==='/api/changes'?checkWhatChanged:stoneBrief)(input,env,()=>reserveDemo(env.DB,request.headers.get('cf-connecting-ip'))));}finally{active--;}
  }
  if(url.pathname==='/api/news'&&request.method==='GET'){const news=await stoneNews();await remember(env,news.events||[]);return json(news);}
  if(url.pathname==='/api/bitget/catalog')return json(await bitgetCatalog());

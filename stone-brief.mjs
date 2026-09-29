@@ -24,7 +24,7 @@ export async function reserveDemo(db,ip,now=Date.now()){
  if(!row)throw Error('DEMO_DAILY_LIMIT');
  }
 }
-export async function stoneBrief(input,env={},permit=async()=>{}){
+export async function stoneBrief(input,env={},permit=async()=>{},progress=()=>{}){
  const {idea,symbol,lang,action}=parseBriefInput(input),demo=demoConfig(env);
  const own=input.modelConfig?userModelConfig(input.modelConfig):null;
  const baseline=action==='challenge'?reviewInput({symbol,idea,createdAt:input.baseline?.createdAt,assumptions:input.baseline?.assumptions}):null;
@@ -38,6 +38,7 @@ export async function stoneBrief(input,env={},permit=async()=>{}){
  const evidence=relevant.map((e,i)=>({id:'N'+(i+1),kind:'source',title:e.title,summary:String(e.summary||'').slice(0,500),url:e.source,publishedAt:e.publishedAt,scope:'reported-headline-and-summary-not-independently-verified'}));
  const fresh=market.price>0&&Number.isFinite(market.quoteTimestamp)&&Math.abs(Date.now()-market.quoteTimestamp)<120000;
  if(fresh)evidence.push({id:'M1',kind:'market-snapshot',title:symbol+' Bitget token quote',summary:JSON.stringify({price:market.price,change24hPct:market.change24hPct,quoteTimestamp:market.quoteTimestamp,warning:'rolling 24h change, not event impact or sector-adjusted return'}),url:market.source,publishedAt:new Date(market.quoteTimestamp).toISOString(),scope:'token-quote-not-underlying-equity'});
+ progress({type:"evidence",symbol,idea,evidence,sourceCount:relevant.length,market:fresh?{price:market.price,change24hPct:market.change24hPct,at:market.quoteTimestamp}:null});
  let report=null;
  if(own||demo.configured){const config=own?input.modelConfig:{...demo,apiKey:env.ASKSTONE_DEMO_QWEN_KEY};report=await qwenChallenge((action==='challenge'?'Act as a skeptical counterparty. Challenge, do not redefine these frozen original assumptions: '+JSON.stringify(baseline?.assumptions)+'. Original thesis: ':'Give a concise balanced brief. ')+idea,{kind:'source',title:symbol+' · combined evidence'},evidence,lang,config,{extractAssumptions:action!=='challenge',compact:true});}
  if(report&&!own)noteAISuccess(report.provider,report.model);

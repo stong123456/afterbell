@@ -1,3 +1,4 @@
+import {briefStream} from './brief-stream.mjs';
 import {stoneBrief,checkWhatChanged,demoConfig} from './stone-brief.mjs';
 import {comparisonEvidence,bitgetCatalog,bitgetMarket,bitgetEvidence,browserMarketEvidence} from './bitget.mjs';
 import {stoneMarket,stoneNews} from './stone-adapter.mjs';
@@ -29,6 +30,11 @@ http.createServer(async(req,res)=>{
    if(!req.headers['content-type']?.startsWith('application/json'))return send(res,415,{error:'JSON_REQUIRED'});
    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12000)return send(res,413,{error:'REQUEST_TOO_LARGE'});chunks.push(chunk);}
    if(activeModels>=2)return send(res,429,{error:'MODEL_BUSY'});
+   if(url.pathname==='/api/brief'&&req.headers.accept?.includes('application/x-ndjson')){
+    const input=JSON.parse(Buffer.concat(chunks).toString('utf8'));activeModels++;
+    const stream=briefStream(emit=>stoneBrief(input,{},async()=>{throw Error('DEMO_LIMIT_UNAVAILABLE');},emit),()=>{activeModels--;});
+    res.writeHead(200,Object.fromEntries(stream.headers));for await(const chunk of stream.body){if(!res.destroyed)res.write(chunk);}res.end();return;
+   }
    activeModels++;try{return send(res,200,await (url.pathname==='/api/changes'?checkWhatChanged:stoneBrief)(JSON.parse(Buffer.concat(chunks).toString('utf8')),{},async()=>{throw Error('DEMO_LIMIT_UNAVAILABLE');}));}finally{activeModels--;}
   }
   if(url.pathname==='/api/challenge'&&req.method==='POST'){
